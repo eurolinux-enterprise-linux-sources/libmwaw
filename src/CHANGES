@@ -1,0 +1,268 @@
+CHANGES:
+
+07/31/2013:
+- recognize more WriteNow 1.0 files
+
+07/29/2013:
+- check that the Microsoft Word use the new properties' classes,
+- Microsoft Word parser: understand where the different properties
+  are exactly stored,
+
+07/16/2013:
+- check that LightWay Text, Mariner Write, Microsoft Works, WriterPlus
+  use the new properties' classes,
+- Microsoft Works parser: retrieve the cell background and font colors +
+  try to recognize functions patterns,
+
+07/15/2013:
+- check that FullWrite use the new properties' classes,
+- try to retrieve the pages' margins, the sidebar and their content,
+
+07/09/2013:
+- check that Acta, BeagleWorks/WordPerfect Works, GreatWorks, HanMac Word-J,
+  HanMac Word-K, Nisus Writer, Z-Write use the new properties' classes,
+- HanMac Word-J, HanMac Word-K: retrieve the extra line's style in a table's
+  cell,
+
+
+07/07/2013:
+- add a parser for MacDoc v1.3 document and self-reading document
+
+07/05/2013:
+- MWAWZip and MWAWFile: look also in FINDER.DAT and RESOURCE.FRK to retrieve
+  resource fork
+- MacWrite II/Pro: use patterns to define the final color + retrieve
+  table's cells properties
+- WriteNow: retrieve table's cells properties
+- check that AppleWorks/ClarisWorks, DOCMaker, eDoc, MacWrite, MindWrite,
+  More, SimpleText, Tex-Edit, WriteNow use the new properties' classes,
+
+07/02/2013:
+- refactor the MWAWCell and MWAWTable classes
+
+-------- version 1.11 (start)  -------------
+
+06/24/2013:
+- add a parser for BeagleWorks v1.0 and WordPerfect Works v1.2
+- optimize a little the detection of a hqx/zip Document
+
+06/14/2013:
+- modify the code to use WPX_SEEK_END when possible
+
+06/12/2013:
+- add a parser for GreatWorks v1-v2 to read text and draw document
+
+05/28/2013:
+- add a parser for More 2.0 and 3.0, retrieve the organization
+  part but not the slide/tree parts ( one days in a Library
+  to retrieve slides ? )
+
+-------- version 1.10 (start)  -------------
+
+05/13/2013:
+- improve a little the Microsoft Word filter to better manage
+  character and paragraph properties
+
+05/07/2013:
+- check that the remaining parsers (excepted Microsoft Word) use the
+  new properties' classes,
+- add table generation in FullWrite parser,
+- rewrite from scratch zip.cpp (to avoid using different license),
+- + many code corrections done by David Tardon.
+
+05/03/2013:
+- check that the WriterPlus parsers use the new properties' classes,
+- simplify a little the code of MWAWDocument
+
+04/30/2013:
+- add a parser for Acta v2 and Acta Classic v1,
+- check that the DOCMaker, eDOC, SimpleText, Tex-Edit, Z-Write parsers
+  use the new properties' classes,
+
+04/25/2013:
+- rewrite MWAWPageSpan,
+- add classes MWAWField, MWAWNote, MWAWSection to store/manage
+  field, note, section properties,
+- check that the ClarisWorks/AppleWorks, MacWrite, MindWrite,
+  WriteNow parsers use the new properties' classes,
+- improve a little the ClarisWorks/AppleWorks frame position by
+  placing <<correctly>> all page's frames,
+- MWAWContentListener : add a sanity check to insure that at most
+  200 very small pictures are generated.
+
+04/14/2013: ----- version 1.9 (start) ---------
+
+04/14/2013:
+- check that the Microsoft Word parser use all
+  the paragraph properties
+- improve a little the Microsoft Word filter to better manage
+  character and paragraph properties
+
+04/04/2013:
+- add parser for HanMac Word-J document
+- HanMac Word-K: retrieve header/footer, footnote, section, ...
+
+03/12/2013: ----- version 1.8 (start) ---------
+
+03/12/2013:
+- skip version 1.6 ( to be coherent with tag )
+
+03/08/2013:
+- check that HanMac Word-K and Microsoft Works parser use all
+  the paragraph properties
+- refactoring of the windows building by Fridrich Strba + many
+  other improvements...
+
+03/04/2013:
+- check that Claris/AppleWorks, Mariner Write, MindWrite parsers use all
+  the paragraph properties
+- add the management of outline ( normal and hidden ) in FullWrite
+  parser and the management of paragraph borders. Remains some problems,
+  ...
+
+02/22/2013:
+- begin to add a new list manager in MWAWList
+- check that eDOC, DOCMaker, LightWay Text, MacWrite, Nisus Writer,
+  SimpleText, Tex-Edit, WriteNow, WriterPlus, Z-Write parsers use all
+  the paragraph properties
+
+02/09/2013:
+- begin to rewrite MWAWParagraph
+- add a SimpleText/TeachText v1.2 parser
+- add a Tex-Edit v2.7 parser
+
+02/06/2013:
+- add a parser for eDOC v2.1 document
+
+01/30/2013: ----- version 1.7 (start) ---------
+
+01/30/2013
+- update Mariner Write and Microsoft Word to use new font properties,
+- manage multi header, table, fill properties in Mariner Write filter,
+- improve a little the Microsoft Word filter to better manage character properties
+
+01/21/2013
+- update HandMac Word-K, LightWay Text, Nisus parser to use the new font properties, 
+- modify mwaw2html to use html5 and CSS properties,
+- add OS6 Central European, Cyrillic, Turkish encodings ( do not know if encoding finding works ).
+
+01/14/2013
+- add a DOCMaker v4 parser
+- update mwawFile to use xattr functions and to look for a ._FILE if no attributes if found...
+- modify mwaw2html to recognize more styles and better treat footnotes, ...
+
+01/10/2013
+- update FullWrite* parser to detect more paragraph properties (to be continued),
+- update Apple/ClarisWorks, FullWrite*, MindWrite, Microsoft Works parsers to use the new font properties,
+
+01/06/2013:
+- create a class MWAWColor to store color,
+- begin to rewrite MWAWFont to add new properties 
+  and update MacWrite*, WriteNow, WriterPlus parsers to use the new properties
+- add MWAWFontSJISConverter to decode S-JIS encoding
+  and update Claris/AppleWorks and LightWay Text to use it.
+  Seems to works for the first parser ( ie. Google finds resulting words :-) )
+  but not to the second parser ( ie. the SJIS-encoding is not even detected in
+  my 2 Japanese's files :-~ )
+
+01/01/2013: ----- version 1.5 (start) ---------
+
+12/30/2012
+- add a first parser for Z-Write 1.3.
+
+12/26/2012
+- add a first parser for LightWayText 4.5 ( only Mac Format ), autoindent,
+  macros not implemented.
+
+12/21/2012
+- add a first parser for Mariner Write Lite 1.6, other Mariner Write 1.* may
+  be recognized ( ignoring some features : table, multi-columns, multi headers,
+  ...) ; but I do not have enough file to test.
+
+12/07/2012
+- add a first parser for HanMac Word-K document ( 2.0.5 and 2.0.6 ),
+  in debug mode, the HanMac Word-J (2.0.4) are also recognised and a few
+  zones are parsed but no output is generated...
+
+11/12/2012: ----- version 1.4 (start) ---------
+
+11/12/2012
+- try to improve a little the claris/appleworks parser
+  ( use vertical descent to add AppleWorks v6 char attachment,
+    use border and background color parameters when building table
+    cells and some frames )
+
+11/01/2012
+- add a OSX specific tools: mwawFile to allow to find the type of old files
+  ( Note: this tools using specific OSX calls deprecated in 10.8 can
+    probably only compile for mac target 10.4<->10.7 )
+
+10/26/2012
+- minor improvements on the Nisus Parser + find some Nisus 3.4<->6.5 files
+  and check that the parser can read them.
+
+10/21/2012:
+- try to improve a little the FullWrite Professional parser
+  ( understand better two of the three main structures + begin to
+    send rulers, some anchor picture and some variable picture )
+
+09/30/2012: ----- version 1.3 (start) ---------
+
+10/09/2012:
+- add a Microsoft Word parser for v1 and v3 (incomplete)
+09/30/2012:
+- try to improve a little the claris/appleworks parser
+  ( reconstruct the table, build the graph structure + begin to
+    try to send some pages anchor picture/... )
+- add vcproj and vcxproj files (inpired by libwps, not tested)
+
+09/15/2012:
+- add Nisus Writer 4.0 parser
+- add code to read zip and binhexed files 
+    and so retrieve the resource fork
+- try to sign the libraries and the executable:
+    lib[mwaw|wpd|wpg]*.dylib and mwaw2odt
+
+07/31/2012: ----- version 1.2 (start) ---------
+
+07/30/2012:
+- retrieve tables and pictures in Microsoft Word 4-5
+  document (incomplete)
+07/16/2012:
+- add Microsoft Works 4.0 parser
+
+06/28/2012:
+- add MindWrite 2.1 parser
+
+06/28/2012: ----- version 1.1 (start) ---------
+
+05/28/2012:
+- add a Microsoft Works 3.0 parser
+
+05/20/2012: ----- version 1.0 (start) ---------
+- rename all the files to simplify the hierarchy,
+  which implies a major version bump:-~,
+
+============== end of version 0. =================
+04/14/2012: 
+- add Microsoft Works 1.0, 2.0 parser
+- add a crude parser for FullWrite Professional
+
+03/17/2012: 
+- tags 0.0.2
+
+03/13/2012:
+- add MacWrite II, MacWrite Pro 1.5, WriteNow v1.0-v2.0 parser
+- add Microsoft Word v4.0-v5.0 parser
+  ( crude version which retrieves the text)
+
+02/04/2012:
+- add parser for MacWrite Pro 1.0
+- tags 0.0.1
+
+01/12/2012: add first version of WriteNow 3.0 and 4.0 Parser 
+
+12/19/2011: creation
+- libmwaw created from on version of libwps.
+- add first version of MacWrite 4.5 and ClarisWorks/AppleWorks Parser
+
