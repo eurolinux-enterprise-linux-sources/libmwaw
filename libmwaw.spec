@@ -2,7 +2,7 @@
 
 Name: libmwaw
 Version: 0.1.11
-Release: 1%{?dist}
+Release: 3%{?dist}
 Summary: Import library for some old mac text documents
 
 Group: System Environment/Libraries
@@ -102,6 +102,12 @@ rm -rf %{buildroot}/%{_docdir}/%{name}
 
 
 %changelog
+* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.1.11-3
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 0.1.11-2
+- Mass rebuild 2013-12-27
+
 * Mon Sep 09 2013 David Tardon <dtardon@redhat.com> - 0.1.11-1
 - new upstream release
 
