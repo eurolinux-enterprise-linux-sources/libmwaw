@@ -173,9 +173,14 @@ void HMWJParser::init()
   m_textParser.reset(new HMWJText(*this));
 }
 
-bool HMWJParser::sendText(long id, long cPos)
+bool HMWJParser::sendText(long id, long cPos, bool asGraphic)
 {
-  return m_textParser->sendText(id, cPos);
+  return m_textParser->sendText(id, cPos, asGraphic);
+}
+
+bool HMWJParser::canSendTextAsGraphic(long id, long cPos)
+{
+  return m_textParser->canSendTextAsGraphic(id, cPos);
 }
 
 bool HMWJParser::sendZone(long zId)
@@ -257,9 +262,10 @@ void HMWJParser::parse(WPXDocumentInterface *docInterface)
       std::vector<long> tokenIds = m_textParser->getTokenIdList();
       m_graphParser->sendPageGraphics(tokenIds);
       m_textParser->sendMainText();
-
+#ifdef DEBUG
       m_textParser->flushExtra();
       m_graphParser->flushExtra();
+#endif
     }
     ascii().reset();
   } catch (...) {
@@ -380,6 +386,8 @@ bool HMWJParser::createZones()
   if (m_graphParser->getFootnoteInformations(fntTextId, fntFirstPosList))
     m_textParser->updateFootnoteInformations(fntTextId, fntFirstPosList);
 
+  // finish graphparser preparation
+  m_graphParser->prepareStructures();
 
   libmwaw::DebugStream f;
   for (it = m_state->m_zonesMap.begin(); it !=m_state->m_zonesMap.end(); ++it) {
@@ -1108,7 +1116,7 @@ bool HMWJParser::checkHeader(MWAWHeader *header, bool strict)
 
   input->seek(m_state->m_zonesListBegin, WPX_SEEK_SET);
   if (header)
-    header->reset(MWAWDocument::HMACJ, 1);
+    header->reset(MWAWDocument::MWAW_T_HANMACWORDJ, 1);
 
   return true;
 }

@@ -94,10 +94,12 @@ public:
 
 protected:
   /** sends a paragraph property to the listener */
-  void setProperty(CWTextInternal::Paragraph const &ruler, int listId=-1);
+  void setProperty(MWAWListener &listener, CWTextInternal::Paragraph const &ruler, int listId=-1);
 
   //! sends the zone data to the listener (if it exists )
-  bool sendZone(int number);
+  bool sendZone(int number, bool asGraphic=false);
+  //! check if we can send a textzone as graphic
+  bool canSendTextAsGraphic(int number) const;
 
   //! sends the data which have not yet been sent to the listener
   void flushExtra();
@@ -122,16 +124,15 @@ protected:
   bool readTextSection(CWTextInternal::Zone &zone);
 
   //! send the text zone to the listener
-  bool sendText(CWTextInternal::Zone const &zone);
+  bool sendText(CWTextInternal::Zone const &zone, bool asGraphic);
+  //! check if we can send a textzone has graphic
+  bool canSendTextAsGraphic(CWTextInternal::Zone const &zone) const;
 
   //! try to find a list id which corresponds to the list beginning in actPos
   int findListId(CWTextInternal::Zone const &zone, int actListId, long cPos, long &lastPos);
 
   //! try to read a font
   bool readFont(int id, int &posC, MWAWFont &font);
-
-  //! try to read a named font
-  bool readChar(int id, int fontSize, MWAWFont &font);
 
   /** read the rulers block which is present at the beginning of the text in the first version of Claris Works : v1-2 */
   bool readParagraphs();
@@ -142,9 +143,6 @@ protected:
   bool readParagraph(int id=-1);
 
   // THE NAMED ENTRY
-
-  /** read a STYL Font sequence */
-  bool readSTYL_CHAR(int N, int fSz);
 
   /** read a STYL Paragraph sequence */
   bool readSTYL_RULR(int N, int fSz);

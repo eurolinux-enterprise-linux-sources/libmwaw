@@ -73,9 +73,9 @@ struct Zone {
 //! Internal: the state of a MSK3Parser
 struct State {
   //! constructor
-  State() : m_docType(MWAWDocument::K_TEXT), m_zoneMap(), m_actPage(0), m_numPages(0),
+  State() : m_docType(MWAWDocument::MWAW_K_TEXT), m_zoneMap(), m_actPage(0), m_numPages(0),
     m_headerText(""), m_footerText(""), m_hasHeader(false), m_hasFooter(false),
-    m_headerHeight(0), m_footerHeight(0) {
+    m_pageLength(-1), m_headerHeight(0), m_footerHeight(0) {
   }
 
   //! return a zone
@@ -87,17 +87,18 @@ struct State {
   }
   //! returns true if this is a text document (hack for MSWorks 4.0 Draw)
   bool IsTextDoc() const {
-    return m_docType == MWAWDocument::K_TEXT;
+    return m_docType == MWAWDocument::MWAW_K_TEXT;
   }
   //! the type of document
-  MWAWDocument::DocumentKind m_docType;
+  MWAWDocument::Kind m_docType;
   //! the list of zone
   std::map<int, Zone> m_zoneMap;
-
   int m_actPage /** the actual page */, m_numPages /** the number of page of the final document */;
 
   std::string m_headerText /**header string v1-2*/, m_footerText /**footer string v1-2*/;
   bool m_hasHeader /** true if there is a header v3*/, m_hasFooter /** true if there is a footer v3*/;
+  //! the page length in point (if known)
+  int m_pageLength;
   int m_headerHeight /** the header height if known */,
       m_footerHeight /** the footer height if known */;
 };
@@ -212,6 +213,8 @@ void MSK3Parser::init()
 ////////////////////////////////////////////////////////////
 double MSK3Parser::getTextHeight() const
 {
+  if (m_state->m_pageLength > 0)
+    return (m_state->m_pageLength-m_state->m_headerHeight-m_state->m_footerHeight)/72.0;
   return getPageSpan().getPageLength()-m_state->m_headerHeight/72.0-m_state->m_footerHeight/72.0;
 }
 
@@ -436,16 +439,14 @@ bool MSK3Parser::readZone(MSK3ParserInternal::Zone &zone)
   input->seek(-1, WPX_SEEK_CUR);
   switch(val) {
   case 0: {
-    int pictId = m_graphParser->getEntryPicture(zone.m_zoneId, pict);
-    if (pictId >= 0) {
+    if (m_graphParser->getEntryPicture(zone.m_zoneId, pict)>=0) {
       input->seek(pict.end(), WPX_SEEK_SET);
       return true;
     }
     break;
   }
   case 1: {
-    int pictId = m_graphParser->getEntryPictureV1(zone.m_zoneId, pict);
-    if (pictId >= 0) {
+    if (m_graphParser->getEntryPictureV1(zone.m_zoneId, pict)>=0) {
       input->seek(pict.end(), WPX_SEEK_SET);
       return true;
     }
@@ -536,13 +537,13 @@ bool MSK3Parser::checkHeader(MWAWHeader *header, bool strict)
   case 1:
     break;
   case 2:
-    m_state->m_docType = MWAWDocument::K_DATABASE;
+    m_state->m_docType = MWAWDocument::MWAW_K_DATABASE;
     break;
   case 3:
-    m_state->m_docType = MWAWDocument::K_SPREADSHEET;
+    m_state->m_docType = MWAWDocument::MWAW_K_SPREADSHEET;
     break;
   case 12:
-    m_state->m_docType = MWAWDocument::K_DRAW;
+    m_state->m_docType = MWAWDocument::MWAW_K_DRAW;
     break;
   default:
     MWAW_DEBUG_MSG(("MSK3Parser::checkHeader: find odd type=%d: not implemented\n", type));
@@ -551,10 +552,10 @@ bool MSK3Parser::checkHeader(MWAWHeader *header, bool strict)
 
 #ifndef DEBUG
   // I have never seen this file, so...
-  if (strict && version() == 1 && m_state->m_docType != MWAWDocument::K_TEXT)
+  if (strict && version() == 1 && m_state->m_docType != MWAWDocument::MWAW_K_TEXT)
     return false;
 
-  if (m_state->m_docType != MWAWDocument::K_TEXT)
+  if (m_state->m_docType != MWAWDocument::MWAW_K_TEXT)
     return false;
 
   if (version() < 1 || version() > 3)
@@ -628,7 +629,7 @@ bool MSK3Parser::checkHeader(MWAWHeader *header, bool strict)
   }
 
   if (header)
-    header->reset(MWAWDocument::MSWORKS, version(), m_state->m_docType);
+    header->reset(MWAWDocument::MWAW_T_MICROSOFTWORKS, version(), m_state->m_docType);
 
   ascii().addPos(0);
   ascii().addNote(f.str().c_str());
@@ -824,7 +825,7 @@ bool MSK3Parser::readGroup(MSK3ParserInternal::Zone &zone, MWAWEntry &entry, int
   MWAWEntry pictZone;
   for (int i = 0; i < N; i++) {
     pos = input->tell();
-    if (m_graphParser->getEntryPicture(zone.m_zoneId, pictZone) >= 0)
+    if (m_graphParser->getEntryPicture(zone.m_zoneId, pictZone)>=0)
       continue;
     MWAW_DEBUG_MSG(("MSK3Parser::readGroup: can not find the end of group \n"));
     input->seek(pos, WPX_SEEK_SET);
@@ -966,7 +967,7 @@ bool MSK3Parser::readPrintInfo()
   }
   f << ")";
 
-
+  // fixme: compute the real page length here...
   // define margin from print info
   Vec2i lTopMargin(margin[0],margin[1]), rBotMargin(margin[2],margin[3]);
   lTopMargin += paperSize - pageSize;
@@ -974,14 +975,14 @@ bool MSK3Parser::readPrintInfo()
   int leftMargin = lTopMargin.x();
   int topMargin = lTopMargin.y();
 
-  // decrease right | bottom
-  int rightMarg = rBotMargin.x() -50;
+  // decrease a little right and bottom margins Margin
+  int rightMarg = rBotMargin.x()-50;
   if (rightMarg < 0) {
     leftMargin -= (-rightMarg);
     if (leftMargin < 0) leftMargin=0;
     rightMarg=0;
   }
-  int botMarg = rBotMargin.y() -50;
+  int botMarg = rBotMargin.y()-50;
   if (botMarg < 0) {
     topMargin -= (-botMarg);
     if (topMargin < 0) topMargin=0;

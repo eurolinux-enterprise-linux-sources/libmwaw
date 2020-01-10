@@ -8,10 +8,9 @@ lib_LTLIBRARIES = libmwaw-@MWAW_MAJOR_VERSION@.@MWAW_MINOR_VERSION@.la $(target_
 libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_includedir = $(includedir)/libmwaw-@MWAW_MAJOR_VERSION@.@MWAW_MINOR_VERSION@/libmwaw
 libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_include_HEADERS = \
 	$(top_srcdir)/inc/libmwaw/libmwaw.hxx \
-	$(top_srcdir)/inc/libmwaw/MWAWDocument.hxx \
-	$(top_srcdir)/inc/libmwaw/MWAWPropertyHandler.hxx 
+	$(top_srcdir)/inc/libmwaw/MWAWDocument.hxx
 
-AM_CXXFLAGS = -I$(top_srcdir)/inc $(WPD_CFLAGS) $(DEBUG_CXXFLAGS) $(ZLIB_CFLAGS)
+AM_CXXFLAGS = -I$(top_srcdir)/inc $(WPD_CFLAGS) $(WPG_CFLAGS) $(DEBUG_CXXFLAGS) $(ZLIB_CFLAGS)
 
 libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_la_LIBADD  = $(ZLIB_LIBS) $(WPD_LIBS) @LIBMWAW_WIN32_RESOURCE@
 libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_la_DEPENDENCIES = @LIBMWAW_WIN32_RESOURCE@  
@@ -29,6 +28,8 @@ libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_la_SOURCES = \
 	BWText.hxx			\
 	CWDatabase.cxx			\
 	CWDatabase.hxx			\
+	CWDbaseContent.cxx		\
+	CWDbaseContent.hxx		\
 	CWGraph.cxx			\
 	CWGraph.hxx			\
 	CWParser.cxx			\
@@ -101,6 +102,8 @@ libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_la_SOURCES = \
 	MSKGraph.hxx			\
 	MSKParser.cxx			\
 	MSKParser.hxx			\
+	MSKTable.cxx			\
+	MSKTable.hxx			\
 	MSK3Parser.cxx			\
 	MSK3Parser.hxx			\
 	MSK3Text.cxx			\
@@ -135,12 +138,21 @@ libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_la_SOURCES = \
 	MWAWFontConverter.hxx		\
 	MWAWFontSJISConverter.cxx	\
 	MWAWFontSJISConverter.hxx	\
+	MWAWGraphicInterface.cxx	\
+	MWAWGraphicInterface.hxx	\
+	MWAWGraphicListener.cxx		\
+	MWAWGraphicListener.hxx		\
+	MWAWGraphicShape.cxx		\
+	MWAWGraphicShape.hxx		\
+	MWAWGraphicStyle.cxx		\
+	MWAWGraphicStyle.hxx		\
 	MWAWHeader.cxx			\
 	MWAWHeader.hxx			\
 	MWAWInputStream.cxx		\
 	MWAWInputStream.hxx		\
 	MWAWList.cxx			\
 	MWAWList.hxx			\
+	MWAWListener.hxx		\
 	MWAWOLEParser.cxx		\
 	MWAWOLEParser.hxx		\
 	MWAWOLEStream.cxx		\
@@ -152,20 +164,17 @@ libmwaw_@MWAW_MAJOR_VERSION@_@MWAW_MINOR_VERSION@_la_SOURCES = \
 	MWAWParser.cxx			\
 	MWAWParser.hxx			\
 	MWAWPict.hxx			\
-	MWAWPictBasic.cxx		\
-	MWAWPictBasic.hxx		\
 	MWAWPictBitmap.cxx		\
 	MWAWPictBitmap.hxx		\
 	MWAWPictData.cxx		\
 	MWAWPictData.hxx		\
 	MWAWPictMac.cxx			\
 	MWAWPictMac.hxx			\
-	MWAWPictOLEContainer.cxx	\
-	MWAWPictOLEContainer.hxx	\
 	MWAWPosition.hxx		\
 	MWAWPrinter.cxx			\
 	MWAWPrinter.hxx			\
 	MWAWPropertyHandler.cxx		\
+	MWAWPropertyHandler.hxx		\
 	MWAWRSRCParser.cxx		\
 	MWAWRSRCParser.hxx		\
 	MWAWSection.cxx			\

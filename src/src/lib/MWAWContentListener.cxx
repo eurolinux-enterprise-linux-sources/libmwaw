@@ -43,6 +43,9 @@
 #include "MWAWCell.hxx"
 #include "MWAWFont.hxx"
 #include "MWAWFontConverter.hxx"
+#include "MWAWGraphicListener.hxx"
+#include "MWAWGraphicStyle.hxx"
+#include "MWAWGraphicShape.hxx"
 #include "MWAWInputStream.hxx"
 #include "MWAWList.hxx"
 #include "MWAWPageSpan.hxx"
@@ -65,7 +68,7 @@ struct DocumentState {
   //! constructor
   DocumentState(std::vector<MWAWPageSpan> const &pageList) :
     m_pageList(pageList), m_metaData(), m_footNoteNumber(0), m_endNoteNumber(0), m_smallPictureNumber(0),
-    m_isDocumentStarted(false), m_isHeaderFooterStarted(false), m_subDocuments() {
+    m_isDocumentStarted(false), m_isHeaderFooterStarted(false), m_sentListMarkers(), m_subDocuments() {
   }
   //! destructor
   ~DocumentState() {
@@ -80,6 +83,8 @@ struct DocumentState {
 
   int m_smallPictureNumber /** number of small picture */;
   bool m_isDocumentStarted /** a flag to know if the document is open */, m_isHeaderFooterStarted /** a flag to know if the header footer is started */;
+  /// the list of marker corresponding to sent list
+  std::vector<int> m_sentListMarkers;
   std::vector<MWAWSubDocumentPtr> m_subDocuments; /** list of document actually open */
 
 private:
@@ -182,7 +187,7 @@ State::State() :
 }
 }
 
-MWAWContentListener::MWAWContentListener(MWAWParserState &parserState, std::vector<MWAWPageSpan> const &pageList, WPXDocumentInterface *documentInterface) :
+MWAWContentListener::MWAWContentListener(MWAWParserState &parserState, std::vector<MWAWPageSpan> const &pageList, WPXDocumentInterface *documentInterface) : MWAWListener(),
   m_ds(new MWAWContentListenerInternal::DocumentState(pageList)), m_ps(new MWAWContentListenerInternal::State), m_psStack(),
   m_parserState(parserState), m_documentInterface(documentInterface)
 {
@@ -192,14 +197,13 @@ MWAWContentListener::~MWAWContentListener()
 {
 }
 
-
 ///////////////////
 // text data
 ///////////////////
 void MWAWContentListener::insertChar(uint8_t character)
 {
   if (character >= 0x80) {
-    insertUnicode(character);
+    MWAWContentListener::insertUnicode(character);
     return;
   }
   _flushDeferredTabs ();
@@ -214,9 +218,9 @@ void MWAWContentListener::insertCharacter(unsigned char c)
     if (c < 0x20) {
       MWAW_DEBUG_MSG(("MWAWContentListener::insertCharacter: Find odd char %x\n", int(c)));
     } else
-      insertChar((uint8_t) c);
+      MWAWContentListener::insertChar((uint8_t) c);
   } else
-    insertUnicode((uint32_t) unicode);
+    MWAWContentListener::insertUnicode((uint32_t) unicode);
 }
 
 int MWAWContentListener::insertCharacter(unsigned char c, MWAWInputStreamPtr &input, long endPos)
@@ -240,11 +244,11 @@ int MWAWContentListener::insertCharacter(unsigned char c, MWAWInputStreamPtr &in
   }
   if (unicode == -1) {
     if (c < 0x20) {
-      MWAW_DEBUG_MSG(("MWAWContentListener::sendText: Find odd char %x\n", int(c)));
+      MWAW_DEBUG_MSG(("MWAWContentListener::insertCharacter: Find odd char %x\n", int(c)));
     } else
-      insertChar((uint8_t) c);
+      MWAWContentListener::insertChar((uint8_t) c);
   } else
-    insertUnicode((uint32_t) unicode);
+    MWAWContentListener::insertUnicode((uint32_t) unicode);
 
   return int(pos-debPos);
 }
@@ -404,26 +408,28 @@ void MWAWContentListener::insertField(MWAWField const &field)
   case MWAWField::None:
     break;
   case MWAWField::PageCount:
-  case MWAWField::PageNumber: {
+  case MWAWField::PageNumber:
+  case MWAWField::Title: {
     _flushDeferredTabs ();
     _flushText();
     _openSpan();
     WPXPropertyList propList;
-    propList.insert("style:num-format", libmwaw::numberingTypeToString(field.m_numberingType).c_str());
-    if (field.m_type == MWAWField::PageNumber)
-      m_documentInterface->insertField(WPXString("text:page-number"), propList);
-    else
-      m_documentInterface->insertField(WPXString("text:page-count"), propList);
+    if (field.m_type==MWAWField::Title)
+      m_documentInterface->insertField(WPXString("text:title"), propList);
+    else {
+      propList.insert("style:num-format", libmwaw::numberingTypeToString(field.m_numberingType).c_str());
+      if (field.m_type == MWAWField::PageNumber)
+        m_documentInterface->insertField(WPXString("text:page-number"), propList);
+      else
+        m_documentInterface->insertField(WPXString("text:page-count"), propList);
+    }
     break;
   }
   case MWAWField::Database:
     if (field.m_data.length())
-      insertUnicodeString(field.m_data.c_str());
+      MWAWContentListener::insertUnicodeString(field.m_data.c_str());
     else
-      insertUnicodeString("#DATAFIELD#");
-    break;
-  case MWAWField::Title:
-    insertUnicodeString("#TITLE#");
+      MWAWContentListener::insertUnicodeString("#DATAFIELD#");
     break;
   case MWAWField::Date:
   case MWAWField::Time: {
@@ -435,16 +441,17 @@ void MWAWContentListener::insertField(MWAWField const &field)
         format="%I:%M:%S %p";
     }
     time_t now = time ( 0L );
-    struct tm timeinfo = *(localtime ( &now));
-    char buf[256];
-    strftime(buf, 256, format.c_str(), &timeinfo);
-    WPXString tmp(buf);
-    insertUnicodeString(tmp);
+    struct tm timeinfo;
+    if (localtime_r(&now, &timeinfo)) {
+      char buf[256];
+      strftime(buf, 256, format.c_str(), &timeinfo);
+      MWAWContentListener::insertUnicodeString(WPXString(buf));
+    }
     break;
   }
   case MWAWField::Link:
     if (field.m_data.length()) {
-      insertUnicodeString(field.m_data.c_str());
+      MWAWContentListener::insertUnicodeString(field.m_data.c_str());
       break;
     }
   default:
@@ -460,6 +467,11 @@ void MWAWContentListener::setDocumentLanguage(std::string locale)
 {
   if (!locale.length()) return;
   m_ds->m_metaData.insert("libwpd:language", locale.c_str());
+}
+
+bool MWAWContentListener::isDocumentStarted() const
+{
+  return m_ds->m_isDocumentStarted;
 }
 
 void MWAWContentListener::startDocument()
@@ -480,7 +492,7 @@ void MWAWContentListener::startDocument()
 void MWAWContentListener::endDocument(bool sendDelayedSubDoc)
 {
   if (!m_ds->m_isDocumentStarted) {
-    MWAW_DEBUG_MSG(("MWAWContentListener::startDocument: the document is not started\n"));
+    MWAW_DEBUG_MSG(("MWAWContentListener::endDocument: the document is not started\n"));
     return;
   }
 
@@ -621,6 +633,11 @@ bool MWAWContentListener::isSectionOpened() const
 MWAWSection const &MWAWContentListener::getSection() const
 {
   return m_ps->m_section;
+}
+
+bool MWAWContentListener::canOpenSectionAddBreak() const
+{
+  return !m_ps->m_isTableOpened && (!m_ps->m_inSubDocument || m_ps->m_subDocumentType == libmwaw::DOC_TEXT_BOX);
 }
 
 bool MWAWContentListener::openSection(MWAWSection const &section)
@@ -855,13 +872,22 @@ void MWAWContentListener::_changeList()
   if (newLevel) {
     shared_ptr<MWAWList> theList;
 
-    m_parserState.m_listManager->send(newListId, *m_documentInterface);
     theList=m_parserState.m_listManager->getList(newListId);
-
     if (!theList) {
       MWAW_DEBUG_MSG(("MWAWContentListener::_changeList: can not find any list\n"));
       m_ps->m_listOrderedLevels.resize(actualLevel);
       return;
+    }
+    if (m_parserState.m_listManager->needToSend(newListId, m_ds->m_sentListMarkers)) {
+      for (int l=1; l <= theList->numLevels(); l++) {
+        WPXPropertyList level;
+        if (!theList->addTo(l, level))
+          continue;
+        if (!theList->isNumeric(l))
+          m_documentInterface->defineUnorderedListLevel(level);
+        else
+          m_documentInterface->defineOrderedListLevel(level);
+      }
     }
     m_ps->m_list = theList;
     m_ps->m_list->setLevel((int)newLevel);
@@ -1060,6 +1086,40 @@ void MWAWContentListener::insertTextBox
   handleSubDocument(subDocument, libmwaw::DOC_TEXT_BOX);
   m_documentInterface->closeTextBox();
 
+  closeFrame();
+}
+
+void MWAWContentListener::insertPicture
+(MWAWPosition const &pos, MWAWGraphicShape const &shape, MWAWGraphicStyle const &style)
+{
+  // sanity check: avoid to send to many small pict
+  float factor=pos.getScaleFactor(pos.unit(), WPX_POINT);
+  if (pos.size()[0]*factor <= 8 && pos.size()[1]*factor <= 8 && m_ds->m_smallPictureNumber++ > 200) {
+    static bool first = true;
+    if (first) {
+      first = false;
+      MWAW_DEBUG_MSG(("MWAWContentListener::insertPicture: find too much small pictures, skip them from now\n"));
+    }
+    return;
+  }
+  MWAWGraphicListenerPtr graphicListener=m_parserState.m_graphicListener;
+  if (!graphicListener || graphicListener->isDocumentStarted()) {
+    MWAW_DEBUG_MSG(("MWAWContentListener::insertPicture: can not use the graphic listener\n"));
+    return;
+  }
+  // first create the picture, reset origin (if it is bad)
+  Box2f bdbox = shape.getBdBox(style,true);
+  graphicListener->startGraphic(Box2f(Vec2f(0,0),bdbox.size()));
+  graphicListener->insertPicture(Box2f(-1*bdbox[0],-1*bdbox[0]+bdbox.size()), shape, style);
+
+  WPXBinaryData data;
+  std::string mime;
+  if (!graphicListener->endGraphic(data,mime))
+    return;
+  if (!openFrame(pos)) return;
+  WPXPropertyList propList;
+  propList.insert("libwpd:mimetype", mime.c_str());
+  m_documentInterface->insertBinaryObject(propList, data);
   closeFrame();
 }
 
@@ -1378,6 +1438,7 @@ void MWAWContentListener::handleSubDocument(MWAWSubDocumentPtr subDocument, libm
   case libmwaw::DOC_NOTE:
   case libmwaw::DOC_TABLE:
   case libmwaw::DOC_COMMENT_ANNOTATION:
+  case libmwaw::DOC_GRAPHIC_GROUP:
   default:
     break;
   }
@@ -1418,6 +1479,7 @@ void MWAWContentListener::handleSubDocument(MWAWSubDocumentPtr subDocument, libm
   case libmwaw::DOC_NOTE:
   case libmwaw::DOC_TABLE:
   case libmwaw::DOC_COMMENT_ANNOTATION:
+  case libmwaw::DOC_GRAPHIC_GROUP:
   default:
     break;
   }
@@ -1453,7 +1515,7 @@ void MWAWContentListener::_endSubDocument()
 ///////////////////
 // table
 ///////////////////
-void MWAWContentListener::openTable(MWAWTable const &table)
+void MWAWContentListener::openTable(MWAWTable const &table, WPXPropertyList tableExtras)
 {
   if (m_ps->m_isTableOpened) {
     MWAW_DEBUG_MSG(("MWAWContentListener::openTable: called with m_isTableOpened=true\n"));
@@ -1464,7 +1526,7 @@ void MWAWContentListener::openTable(MWAWTable const &table)
     _closeParagraph();
 
   // default value: which can be redefined by table
-  WPXPropertyList propList;
+  WPXPropertyList propList(tableExtras);
   propList.insert("table:align", "left");
   propList.insert("fo:margin-left", *m_ps->m_paragraph.m_margins[1], *m_ps->m_paragraph.m_marginsUnit);
 

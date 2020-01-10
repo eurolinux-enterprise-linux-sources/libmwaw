@@ -1,5 +1,5 @@
 %define name libmwaw
-%define version 0.1.11
+%define version 0.2.0
 %define  RELEASE 1
 %define  release     %{?CUSTOM_RELEASE} %{!?CUSTOM_RELEASE:%RELEASE}
 
@@ -73,7 +73,7 @@ umask 022
 
 %files
 %defattr(644,root,root,755)
-%{_libdir}/libmwaw*-0.1.so.*
+%{_libdir}/libmwaw*-0.2.so.*
 
 %if %{!?_without_stream:1}%{?_without_stream:0}
 %files tools
@@ -83,14 +83,14 @@ umask 022
 
 %files devel
 %defattr(644,root,root,755)
-%{_libdir}/libmwaw*-0.1.so
-#%{_libdir}/libmwaw*-0.1.*a
-%{_libdir}/pkgconfig/libmwaw*-0.1.pc
-%{_includedir}/libmwaw-0.1/libmwaw
+%{_libdir}/libmwaw*-0.2.so
+#%{_libdir}/libmwaw*-0.2.*a
+%{_libdir}/pkgconfig/libmwaw*-0.2.pc
+%{_includedir}/libmwaw-0.2/libmwaw
 
 %if %{!?_without_docs:1}%{?_without_docs:0}
 %files docs
-%{_datadir}/doc/libmwaw-0.1.11/*
+%{_datadir}/doc/libmwaw-0.2.0/*
 %endif
 
 %changelog

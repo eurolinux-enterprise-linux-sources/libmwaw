@@ -103,8 +103,8 @@ protected:
   //! finds the different objects zones
   bool createZones();
 
-  //! try to return the type of a zone
-  CWStruct::DSET::Type getZoneType(int zId) const;
+  //! return the zone corresponding to an id ( low level)
+  shared_ptr<CWStruct::DSET> getZone(int zId) const;
 
   /** try to find the zone dags structure... */
   bool exploreZonesGraph();
@@ -130,6 +130,8 @@ protected:
       where \a fSz to the int size: 1(int8), 2(int16), 4(int32) */
   bool readStructIntZone(char const *zoneName, bool hasEntete, int fSz, std::vector<int> &res);
 
+  //! returns the number of expected pages ( accross pages x down page)
+  Vec2i getDocumentPages() const;
   //! returns the page height, ie. paper size less margin (in inches) less header/footer size
   double getTextHeight() const;
   //! returns the page left top point ( in inches)
@@ -141,12 +143,10 @@ protected:
   // interface with the text parser
   //
 
+  //! check if we can send a zone as a graphic
+  bool canSendZoneAsGraphic(int number) const;
   //! send a zone
-  bool sendZone(int zoneId, MWAWPosition pos=MWAWPosition());
-  //! send a zone in a frame
-  void sendZoneInFrame(int zoneId, MWAWPosition pos,
-                       WPXPropertyList extras = WPXPropertyList(),
-                       WPXPropertyList frameExtras = WPXPropertyList());
+  bool sendZone(int zoneId, bool asGraphic, MWAWPosition pos=MWAWPosition());
   //! indicate that a zone is already parsed
   void forceParsed(int zoneId);
 
@@ -160,12 +160,6 @@ protected:
   // interface with the graph parser
   //
 
-  //! returns the color corresponding to colId (if possible)
-  bool getColor(int colId, MWAWColor &col) const;
-
-  //! return the pattern percent which corresponds to an id (or -1)
-  float getPatternPercent(int id) const;
-
   //! returns the header/footer id
   void getHeaderFooterId(int &headerId, int &footerId) const;
 
@@ -175,6 +169,9 @@ protected:
 
   //! reads the document header
   bool readDocHeader();
+
+  //! reads the document info part ( end of the header)
+  bool readDocInfo();
 
   //! reads the end table ( appears in v3.0 : file version ? )
   bool readEndTable();

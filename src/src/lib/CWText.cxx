@@ -42,6 +42,7 @@
 #include "MWAWContentListener.hxx"
 #include "MWAWFont.hxx"
 #include "MWAWFontConverter.hxx"
+#include "MWAWGraphicListener.hxx"
 #include "MWAWParagraph.hxx"
 #include "MWAWSection.hxx"
 
@@ -331,12 +332,12 @@ struct TextZoneInfo {
   std::string m_extra;
 };
 
-enum TokenType { TKN_UNKNOWN, TKN_FOOTNOTE, TKN_PAGENUMBER, TKN_GRAPHIC };
+enum TokenType { TKN_UNKNOWN, TKN_FOOTNOTE, TKN_PAGENUMBER, TKN_GRAPHIC, TKN_FIELD };
 
 /** Internal: class to store field definition: TOKN entry*/
 struct Token {
   //! constructor
-  Token() : m_type(TKN_UNKNOWN), m_zoneId(-1), m_page(-1), m_descent(0), m_extra("") {
+  Token() : m_type(TKN_UNKNOWN), m_zoneId(-1), m_page(-1), m_descent(0), m_fieldEntry(), m_extra("") {
     for (int i = 0; i < 3; i++) m_unknown[i] = 0;
     for (int i = 0; i < 2; i++) m_size[i] = 0;
   }
@@ -352,6 +353,8 @@ struct Token {
   int m_size[2];
   //! the descent
   int m_descent;
+  //! the field name entry
+  MWAWEntry m_fieldEntry;
   //! the unknown zone
   int m_unknown[3];
   //! a string used to store the parsing errors
@@ -363,6 +366,9 @@ std::ostream &operator<<(std::ostream &o, Token const &tok)
   switch (tok.m_type) {
   case TKN_FOOTNOTE:
     o << "footnoote,";
+    break;
+  case TKN_FIELD:
+    o << "field[linked],";
     break;
   case TKN_PAGENUMBER:
     switch(tok.m_unknown[0]) {
@@ -442,13 +448,11 @@ struct Zone : public CWStruct::DSET {
 //! Internal: the state of a CWText
 struct State {
   //! constructor
-  State() : m_version(-1), m_fontsList(), m_paragraphsList(), m_zoneMap() {
+  State() : m_version(-1), m_paragraphsList(), m_zoneMap() {
   }
 
   //! the file version
   mutable int m_version;
-  //! the list of fonts
-  std::vector<MWAWFont> m_fontsList;
   //! the list of paragraph
   std::vector<Paragraph> m_paragraphsList;
   //! the list of text zone
@@ -685,7 +689,8 @@ shared_ptr<CWStruct::DSET> CWText::readDSETZone(CWStruct::DSET const &zone, MWAW
       ascFile.addPos(pos);
       ascFile.addNote(f.str().c_str());
     }
-    input->seek(zEntry.end(), WPX_SEEK_SET);
+    if (input->tell() < zEntry.end() || !ok)
+      input->seek(zEntry.end(), WPX_SEEK_SET);
   }
 
   if (ok && vers >= 2) {
@@ -741,14 +746,11 @@ bool CWText::readFont(int id, int &posC, MWAWFont &font)
   if (fontSize == 0)
     return false;
 
-  input->seek(fontSize, WPX_SEEK_CUR);
-  if (long(input->tell()) != pos+fontSize) {
+  input->seek(pos, WPX_SEEK_SET);
+  if (!input->checkPosition(pos+fontSize)) {
     MWAW_DEBUG_MSG(("CWText::readFont: file is too short"));
-    input->seek(pos, WPX_SEEK_SET);
     return false;
   }
-
-  input->seek(pos, WPX_SEEK_SET);
   posC = int(input->readULong(4));
   font = MWAWFont();
   libmwaw::DebugFile &ascFile = m_parserState->m_asciiFile;
@@ -784,7 +786,7 @@ bool CWText::readFont(int id, int &posC, MWAWFont &font)
   MWAWColor color(MWAWColor::black());
   if (colId!=1) {
     MWAWColor col;
-    if (m_mainParser->getColor(colId, col))
+    if (m_styleManager->getColor(colId, col))
       color = col;
     else if (vers != 1) {
       MWAW_DEBUG_MSG(("CWText::readFont: unknown color %d\n", colId));
@@ -812,83 +814,6 @@ bool CWText::readFont(int id, int &posC, MWAWFont &font)
   }
   font.setFlags(flags);
   font.setColor(color);
-  f << font.getDebugString(m_parserState->m_fontConverter);
-  if (long(input->tell()) != pos+fontSize)
-    ascFile.addDelimiter(input->tell(), '|');
-  input->seek(pos+fontSize, WPX_SEEK_SET);
-  ascFile.addPos(pos);
-  ascFile.addNote(f.str().c_str());
-  return true;
-}
-
-bool CWText::readChar(int id, int fontSize, MWAWFont &font)
-{
-  MWAWInputStreamPtr &input= m_parserState->m_input;
-  long pos = input->tell();
-
-  input->seek(pos, WPX_SEEK_SET);
-  font = MWAWFont();
-  libmwaw::DebugFile &ascFile = m_parserState->m_asciiFile;
-  libmwaw::DebugStream f;
-  if (id == 0)
-    f << "Entries(CHAR)-0:";
-  else
-    f << "CHAR-" << id << ":";
-
-  int val = (int) input->readLong(2);
-  if (val != -1) f << "f0=" << val << ",";
-  f << "flags=[";
-  for (int i = 0; i < 6; i++) {
-    val  = (int) input->readLong(2);
-    if (val) {
-      if (i == 3)
-        f << "f" << i << "=" << std::hex << val << std::dec << ",";
-      else
-        f << "f" << i << "=" << val << ",";
-    }
-  }
-  font.setId(m_styleManager->getFontId((int) input->readULong(2)));
-  int flag =(int) input->readULong(2);
-  uint32_t flags=0;
-  if (flag&0x1) flags |= MWAWFont::boldBit;
-  if (flag&0x2) flags |= MWAWFont::italicBit;
-  if (flag&0x4) font.setUnderlineStyle(MWAWFont::Line::Simple);
-  if (flag&0x8) flags |= MWAWFont::embossBit;
-  if (flag&0x10) flags |= MWAWFont::shadowBit;
-  if (flag&0x20) font.setDeltaLetterSpacing(-1);
-  if (flag&0x40) font.setDeltaLetterSpacing(1);
-  if (flag&0x80) font.setStrikeOutStyle(MWAWFont::Line::Simple);
-  if (flag&0x100) font.set(MWAWFont::Script::super100());
-  if (flag&0x200) font.set(MWAWFont::Script::sub100());
-  if (flag&0x400) font.set(MWAWFont::Script::super());
-  if (flag&0x800) font.set(MWAWFont::Script::sub());
-  if (flag&0x2000) {
-    font.setUnderlineStyle(MWAWFont::Line::Simple);
-    font.setUnderlineType(MWAWFont::Line::Double);
-  }
-  font.setSize((float) input->readULong(1));
-
-  int colId = (int) input->readULong(1);
-  MWAWColor color(MWAWColor::black());
-  if (colId!=1) {
-    f << "#col=" << std::hex << colId << std::dec << ",";
-  }
-  font.setColor(color);
-  if (fontSize >= 12 && version()==6) {
-    flag = (int) input->readULong(2);
-    if (flag & 0x1)
-      font.setUnderlineStyle(MWAWFont::Line::Simple);
-    if (flag & 0x2) {
-      font.setUnderlineStyle(MWAWFont::Line::Simple);
-      font.setUnderlineType(MWAWFont::Line::Double);
-    }
-    if (flag & 0x20)
-      font.setStrikeOutStyle(MWAWFont::Line::Simple);
-    flag &= 0xFFDC;
-    if (flag)
-      f << "#flag2=" << std::hex << flag << std::dec << ",";
-  }
-  font.setFlags(flags);
   f << font.getDebugString(m_parserState->m_fontConverter);
   if (long(input->tell()) != pos+fontSize)
     ascFile.addDelimiter(input->tell(), '|');
@@ -1085,6 +1010,7 @@ bool CWText::readTokens(MWAWEntry const &entry, CWTextInternal::Zone &zone)
   CWTextInternal::PLC plc;
   plc.m_type = CWTextInternal::P_Token;
   int val;
+  std::vector<int> fieldList;
   for (int i = 0; i < numElt; i++) {
     pos = input->tell();
 
@@ -1103,6 +1029,10 @@ bool CWText::readTokens(MWAWEntry const &entry, CWTextInternal::Zone &zone)
     case 2:
       /* find in v4-v6, does not seem to exist in v1-v2 */
       token.m_type = CWTextInternal::TKN_PAGENUMBER;
+      break;
+    case 3:
+      token.m_type = CWTextInternal::TKN_FIELD;
+      fieldList.push_back(i);
       break;
     default:
       f << "#type=" << type << ",";
@@ -1140,6 +1070,27 @@ bool CWText::readTokens(MWAWEntry const &entry, CWTextInternal::Zone &zone)
   }
 
   input->seek(entry.end(), WPX_SEEK_SET);
+  for (size_t i=0; i < fieldList.size(); ++i) {
+    pos=input->tell();
+    long sz=(long) input->readULong(4);
+    f.str("");
+    f << "Token[field-" << i << "]:";
+    if (!input->checkPosition(pos+sz+4) || long(input->readULong(1))+1!=sz) {
+      MWAW_DEBUG_MSG(("CWText::readTokens: can find token field name %d\n", int(i)));
+      input->seek(pos, WPX_SEEK_SET);
+      f << "###";
+      ascFile.addPos(pos);
+      ascFile.addNote(f.str().c_str());
+      return false;
+    }
+    ascFile.addPos(pos);
+    ascFile.addNote(f.str().c_str());
+    MWAWEntry fieldEntry;
+    fieldEntry.setBegin(input->tell());
+    fieldEntry.setEnd(pos+sz+4);
+    zone.m_tokenList[size_t(fieldList[i])].m_fieldEntry=fieldEntry;
+    input->seek(fieldEntry.end(), WPX_SEEK_SET);
+  }
   return true;
 }
 
@@ -1289,10 +1240,31 @@ bool CWText::readTextZoneSize(MWAWEntry const &entry, CWTextInternal::Zone &zone
   return true;
 }
 
-bool CWText::sendText(CWTextInternal::Zone const &zone)
+bool CWText::canSendTextAsGraphic(CWTextInternal::Zone const &zone) const
 {
-  MWAWContentListenerPtr listener=m_parserState->m_listener;
-  if (!listener) {
+  size_t numSection=zone.m_sectionList.size();
+  if (numSection>1) return false;
+  if (numSection==1 && zone.m_sectionList[0].m_numColumns>1)
+    return false;
+  for (size_t t=0; t < zone.m_tokenList.size(); ++t) {
+    CWTextInternal::Token const &tok=zone.m_tokenList[t];
+    if (tok.m_type!=CWTextInternal::TKN_UNKNOWN &&
+        tok.m_type!=CWTextInternal::TKN_PAGENUMBER &&
+        tok.m_type!=CWTextInternal::TKN_FIELD)
+      return false;
+  }
+  return true;
+}
+
+bool CWText::sendText(CWTextInternal::Zone const &zone, bool asGraphic)
+{
+  MWAWListenerPtr listener;
+  zone.m_parsed=true;
+  if (asGraphic)
+    listener=m_parserState->m_graphicListener;
+  else
+    listener=m_parserState->m_listener;
+  if (!listener || !listener->canWriteText()) {
     MWAW_DEBUG_MSG(("CWText::sendText: can not find a listener\n"));
     return false;
   }
@@ -1305,8 +1277,14 @@ bool CWText::sendText(CWTextInternal::Zone const &zone)
   int numParagraphs = int(m_state->m_paragraphsList.size());
   int actPage = 1;
   size_t numZones = zone.m_zones.size();
-  if (main)
-    m_mainParser->newPage(actPage);
+  if (main) {
+    if (!asGraphic)
+      m_mainParser->newPage(actPage);
+    else {
+      MWAW_DEBUG_MSG(("CWText::sendText: try to send main zone as graphic\n"));
+      main=false;
+    }
+  }
   int numCols = 1;
   int numSection = 0, numSectionInPage=0;
   int nextSection = -1;
@@ -1351,7 +1329,7 @@ bool CWText::sendText(CWTextInternal::Zone const &zone)
           nextSection = -1;
         }
         numCols = section.numColumns();
-        int actCols = listener->getSection().numColumns();
+        int actCols = asGraphic ? 1 : listener->getSection().numColumns();
         if (numCols > 1  || actCols > 1) {
           if (listener->isSectionOpened())
             listener->closeSection();
@@ -1387,7 +1365,7 @@ bool CWText::sendText(CWTextInternal::Zone const &zone)
           CWTextInternal::Paragraph const &para = m_state->m_paragraphsList[(size_t) paraPLC.m_rulerId];
           if (*para.m_listLevelIndex>0 && actC >= actListCPos)
             actListId=findListId(zone, actListId, actC, actListCPos);
-          setProperty(para, actListId);
+          setProperty(*listener, para, actListId);
           break;
         }
         case CWTextInternal::P_Token: {
@@ -1425,14 +1403,30 @@ bool CWText::sendText(CWTextInternal::Zone const &zone)
           case CWTextInternal::TKN_GRAPHIC:
             if (zone.okChildId(token.m_zoneId)) {
               // fixme
+              MWAWPosition tPos;
               if (token.m_descent != 0) {
-                MWAWPosition tPos(Vec2f(0,float(token.m_descent)), Vec2f(), WPX_POINT);
+                tPos=MWAWPosition(Vec2f(0,float(token.m_descent)), Vec2f(), WPX_POINT);
                 tPos.setRelativePosition(MWAWPosition::Char, MWAWPosition::XLeft, MWAWPosition::YBottom);
-                m_mainParser->sendZone(token.m_zoneId, tPos);
-              } else
-                m_mainParser->sendZone(token.m_zoneId);
+              }
+              m_mainParser->sendZone(token.m_zoneId, false, tPos);
             } else
               f << "###";
+            break;
+          case CWTextInternal::TKN_FIELD:
+            listener->insertUnicode(0xab);
+            if (token.m_fieldEntry.valid() &&
+                input->checkPosition(token.m_fieldEntry.end())) {
+              long actPos=input->tell();
+              input->seek(token.m_fieldEntry.begin(), WPX_SEEK_SET);
+              long endFPos=token.m_fieldEntry.end();
+              while (!input->atEOS() && input->tell() < token.m_fieldEntry.end())
+                listener->insertCharacter((unsigned char)input->readULong(1), input, endFPos);
+              input->seek(actPos, WPX_SEEK_SET);
+            } else {
+              MWAW_DEBUG_MSG(("CWText::sendText: can not find field token data\n"));
+              listener->insertCharacter(' ');
+            }
+            listener->insertUnicode(0xbb);
             break;
           case CWTextInternal::TKN_UNKNOWN:
           default:
@@ -1578,34 +1572,6 @@ int CWText::findListId(CWTextInternal::Zone const &zone, int actListId, long act
 ////////////////////////////////////////////////////////////
 // the style definition?
 ////////////////////////////////////////////////////////////
-bool CWText::readSTYL_CHAR(int N, int fSz)
-{
-  if (fSz == 0 || N== 0) return true;
-  libmwaw::DebugFile &ascFile = m_parserState->m_asciiFile;
-  libmwaw::DebugStream f;
-  if (m_state->m_fontsList.size()) {
-    MWAW_DEBUG_MSG(("CWText::readSTYL_CHAR: font list already exists!!!\n"));
-  }
-  m_state->m_fontsList.resize((size_t)N);
-  MWAWInputStreamPtr &input= m_parserState->m_input;
-  for (int i = 0; i < N; i++) {
-    long pos = input->tell();
-    MWAWFont font;
-    if (readChar(i, fSz, font))
-      m_state->m_fontsList[(size_t) i] = font;
-    else {
-      f.str("");
-      if (!i)
-        f << "Entries(Font)-F0:#";
-      else
-        f << "FontF-" << i << ":#";
-      ascFile.addPos(pos);
-      ascFile.addNote(f.str().c_str());
-    }
-    input->seek(pos+fSz, WPX_SEEK_SET);
-  }
-  return true;
-}
 
 bool CWText::readSTYL_RULR(int N, int fSz)
 {
@@ -1945,41 +1911,50 @@ bool CWText::readParagraph(int id)
   return true;
 }
 
-void CWText::setProperty(CWTextInternal::Paragraph const &ruler, int listId)
+void CWText::setProperty(MWAWListener &listener, CWTextInternal::Paragraph const &ruler, int listId)
 {
-  if (!m_parserState->m_listener) return;
   if (listId <= 0) {
-    m_parserState->m_listener->setParagraph(ruler);
+    listener.setParagraph(ruler);
     return;
   }
   MWAWParagraph para=ruler;
   para.m_listId=listId;
-  m_parserState->m_listener->setParagraph(para);
+  listener.setParagraph(para);
 }
 
-bool CWText::sendZone(int number)
+bool CWText::canSendTextAsGraphic(int number) const
+{
+  std::map<int, shared_ptr<CWTextInternal::Zone> >::const_iterator iter
+    = m_state->m_zoneMap.find(number);
+  if (iter == m_state->m_zoneMap.end() || !iter->second)
+    return false;
+  return canSendTextAsGraphic(*iter->second);
+}
+
+bool CWText::sendZone(int number, bool asGraphic)
 {
   std::map<int, shared_ptr<CWTextInternal::Zone> >::iterator iter
     = m_state->m_zoneMap.find(number);
   if (iter == m_state->m_zoneMap.end())
     return false;
   shared_ptr<CWTextInternal::Zone> zone = iter->second;
-  sendText(*zone);
-  zone->m_parsed = true;
+  sendText(*zone, asGraphic);
   return true;
 }
 
 void CWText::flushExtra()
 {
+  if (!m_parserState->m_listener) return;
   std::map<int, shared_ptr<CWTextInternal::Zone> >::iterator iter
     = m_state->m_zoneMap.begin();
   for ( ; iter !=  m_state->m_zoneMap.end(); ++iter) {
     shared_ptr<CWTextInternal::Zone> zone = iter->second;
-    if (zone->m_parsed)
+    if (!zone || zone->m_parsed)
       continue;
-    if (m_parserState->m_listener) m_parserState->m_listener->insertEOL();
-    sendText(*zone);
-    zone->m_parsed = true;
+    m_parserState->m_listener->insertEOL();
+    if (zone->m_parsed) // can be a header/footer in draw zone
+      continue;
+    sendText(*zone, false);
   }
 }
 

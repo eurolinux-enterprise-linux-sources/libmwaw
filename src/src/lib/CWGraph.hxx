@@ -47,6 +47,7 @@
 
 #include "MWAWDebug.hxx"
 #include "MWAWInputStream.hxx"
+#include "MWAWPosition.hxx"
 
 #include "CWStruct.hxx"
 
@@ -56,9 +57,11 @@ struct Group;
 struct State;
 struct Style;
 struct Zone;
-struct ZoneBasic;
-struct ZoneBitmap;
+struct ZoneShape;
+struct Bitmap;
 struct ZonePict;
+
+class SubDocument;
 }
 
 class CWParser;
@@ -71,6 +74,7 @@ class CWStyleManager;
  */
 class CWGraph
 {
+  friend class CWGraphInternal::SubDocument;
   friend class CWParser;
 
 public:
@@ -93,41 +97,50 @@ public:
   shared_ptr<CWStruct::DSET> readBitmapZone
   (CWStruct::DSET const &zone, MWAWEntry const &entry, bool &complete);
 
-  //! reads a color map zone ( v4-v6)
-  bool readColorList(MWAWEntry const &entry);
-
-  //! return the color which corresponds to an id (if possible)
-  bool getColor(int id, MWAWColor &col) const;
-
-  //! return the pattern percent which corresponds to an id (or -1)
-  float getPatternPercent(int id) const;
-
-  //! return the wall paper color which corresponds to an id (if possible)
-  bool getWallPaperColor(int id, MWAWColor &col) const;
-
-  //! return the line color which corresponds to some ids (if possible)
-  bool getLineColor(CWGraphInternal::Style const style, MWAWColor &col) const;
   //! return the surface color which corresponds to some ids (if possible)
   bool getSurfaceColor(CWGraphInternal::Style const style, MWAWColor &col) const;
 protected:
+  //! set the slide list ( for presentation )
+  void setSlideList(std::vector<int> const &slideList);
+  //! check if we can send a group as graphic
+  bool canSendGroupAsGraphic(int number) const;
   //! sends the zone data to the listener (if it exists )
-  bool sendZone(int number, MWAWPosition pos=MWAWPosition());
+  bool sendGroup(int number, bool asGraphic, MWAWPosition const &pos=MWAWPosition());
+  //! check if we can send a group as graphic
+  bool canSendBitmapAsGraphic(int number) const;
+  //! sends the bitmap data to the listener (if it exists )
+  bool sendBitmap(int number, bool asGraphic, MWAWPosition const &pos=MWAWPosition());
 
   //! sends the data which have not yet been sent to the listener
   void flushExtra();
+
+  // interface with main parser
+
+  //! ask the main parser to send a zone
+  void askToSend(int number, bool asGraphic, MWAWPosition const &pos=MWAWPosition());
 
   //
   // Intermediate level
   //
 
+  //! check the number of accross page ( for draw document )
+  void checkNumberAccrossPages(CWGraphInternal::Group &group) const;
   //! update the group information to choose how to send the group data
   void updateInformation(CWGraphInternal::Group &group) const;
+  //! check if we can send a group as graphic
+  bool canSendAsGraphic(CWGraphInternal::Group &group) const;
+  //! send a group
+  bool sendGroup(CWGraphInternal::Group &group, MWAWPosition const &position);
+  //! send a group as graphic
+  bool sendGroup(CWGraphInternal::Group &group, std::vector<size_t> const &lChild, MWAWGraphicListener &listener);
+  //! send a group child
+  bool sendGroupChild(CWGraphInternal::Group &group, size_t child, MWAWPosition position);
   /* read a simple group */
   shared_ptr<CWGraphInternal::Zone> readGroupDef(MWAWEntry const &entry);
 
   /* read a simple graphic zone */
-  bool readBasicGraphic(MWAWEntry const &entry,
-                        CWGraphInternal::ZoneBasic &zone);
+  bool readShape(MWAWEntry const &entry,
+                 CWGraphInternal::ZoneShape &zone);
 
   /* read the group data.
 
@@ -150,7 +163,7 @@ protected:
   /* read a ole document zone */
   bool readOLE(CWGraphInternal::ZonePict &zone);
 
-/////////////
+  /////////////
   /* try to read the qtime data zone */
   bool readQTimeData(shared_ptr<CWGraphInternal::Zone> zone);
 
@@ -162,7 +175,7 @@ protected:
   bool readBitmapColorMap(std::vector<MWAWColor> &cMap);
 
   /* try to read the bitmap  */
-  bool readBitmapData(CWGraphInternal::ZoneBitmap &zone);
+  bool readBitmapData(CWGraphInternal::Bitmap &zone);
   //
   // low level
   //
@@ -178,12 +191,10 @@ protected:
                    WPXPropertyList extras = WPXPropertyList());
 
   //! sends a basic graphic zone
-  bool sendBasicPicture(CWGraphInternal::ZoneBasic &pict, MWAWPosition pos,
-                        WPXPropertyList extras = WPXPropertyList());
+  bool sendShape(CWGraphInternal::ZoneShape &pict, MWAWPosition pos);
 
   //! sends a bitmap graphic zone
-  bool sendBitmap(CWGraphInternal::ZoneBitmap &pict, MWAWPosition pos,
-                  WPXPropertyList extras = WPXPropertyList());
+  bool sendBitmap(CWGraphInternal::Bitmap &pict, bool asGraphic, MWAWPosition pos);
 
 private:
   CWGraph(CWGraph const &orig);

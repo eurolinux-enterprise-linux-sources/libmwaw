@@ -65,8 +65,10 @@ public:
   //! the resource parser
   MWAWRSRCParserPtr m_rsrcParser;
 
-  //! the fonct converter
+  //! the font converter
   MWAWFontConverterPtr m_fontConverter;
+  //! the graphic listener
+  MWAWGraphicListenerPtr m_graphicListener;
   //! the list manager
   MWAWListManagerPtr m_listManager;
   //! the listener
@@ -120,6 +122,10 @@ protected:
   //! returns the actual input
   MWAWInputStreamPtr &getInput() {
     return m_parserState->m_input;
+  }
+  //! returns the graphic listener
+  MWAWGraphicListenerPtr &getGraphicListener() {
+    return m_parserState->m_graphicListener;
   }
   //! returns the listener
   MWAWContentListenerPtr &getListener() {

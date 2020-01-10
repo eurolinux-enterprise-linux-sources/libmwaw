@@ -39,6 +39,7 @@
 #  define HMWJ_GRAPH
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -53,9 +54,10 @@ namespace HMWJGraphInternal
 {
 struct CellFormat;
 struct Frame;
-struct BasicGraph;
 struct CommentFrame;
+struct Group;
 struct PictureFrame;
+struct ShapeGraph;
 struct TableFrame;
 struct TextboxFrame;
 struct TextFrame;
@@ -96,6 +98,8 @@ protected:
   //! returns the color associated with a pattern
   bool getColor(int colId, int patternId, MWAWColor &color) const;
 
+  /** check the group structures, the linked textbox */
+  void prepareStructures();
   //! try to send the page graphic
   bool sendPageGraphics(std::vector<long> const &doNotSendIds);
   //! sends the data which have not yet been sent to the listener
@@ -109,7 +113,7 @@ protected:
   /** try to read a frame*/
   shared_ptr<HMWJGraphInternal::Frame> readFrame(int id);
   /** try to read the basic graph data */
-  shared_ptr<HMWJGraphInternal::BasicGraph> readBasicGraph(HMWJGraphInternal::Frame const &header, long endPos);
+  shared_ptr<HMWJGraphInternal::ShapeGraph> readShapeGraph(HMWJGraphInternal::Frame const &header, long endPos);
   /** try to read the comment data  */
   shared_ptr<HMWJGraphInternal::CommentFrame> readCommentData(HMWJGraphInternal::Frame const &header, long endPos);
   /** try to read the picture data  */
@@ -135,7 +139,7 @@ protected:
   /** try to send a frame to the listener */
   bool sendFrame(HMWJGraphInternal::Frame const &frame, MWAWPosition pos, WPXPropertyList extras=WPXPropertyList());
   /** try to send a basic picture to the listener */
-  bool sendBasicGraph(HMWJGraphInternal::BasicGraph const &pict, MWAWPosition pos, WPXPropertyList extras=WPXPropertyList());
+  bool sendShapeGraph(HMWJGraphInternal::ShapeGraph const &pict, MWAWPosition pos);
   /** try to send a comment box to the listener */
   bool sendComment(HMWJGraphInternal::CommentFrame const &textbox, MWAWPosition pos, WPXPropertyList extras=WPXPropertyList());
   /** try to send a picture frame */
@@ -147,6 +151,17 @@ protected:
   /** try to send a table unformatted*/
   bool sendTableUnformatted(long zId);
 
+  /** try to send a group to the listener */
+  bool sendGroup(long zId, MWAWPosition pos);
+  /** try to send a group to the listener */
+  bool sendGroup(HMWJGraphInternal::Group const &group, MWAWPosition pos);
+  //! check if we can send a group as graphic
+  bool canCreateGraphic(HMWJGraphInternal::Group const &group);
+  /** try to send a group elements by elements */
+  void sendGroupChild(HMWJGraphInternal::Group const &group, MWAWPosition const &pos);
+  /** send the group as a graphic zone */
+  void sendGroup(HMWJGraphInternal::Group const &group, MWAWGraphicListenerPtr &listener);
+
   // interface with mainParser
 
   /** return a list textZId -> type which type=0(main), 1(header),
@@ -157,11 +172,13 @@ protected:
   /** try to send a frame to the listener */
   bool sendFrame(long frameId, MWAWPosition pos, WPXPropertyList extras=WPXPropertyList());
   //! ask main parser to send a text zone
-  bool sendText(long textId, long fPos);
+  bool sendText(long textId, long fPos, bool asGraphic=false);
 
   //
   // low level
   //
+  /** check the graph structures: ie. the group children */
+  bool checkGroupStructures(long zId, std::set<long> &seens, bool inGroup);
 
 
 private:

@@ -64,27 +64,32 @@ typedef __int64 int64_t;
 
 #else /* !_MSC_VER && !__DJGPP__*/
 
-#ifdef HAVE_CONFIG_H
+#  ifdef HAVE_CONFIG_H
 
-#include <config.h>
+#    include <config.h>
+#    ifdef HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#    ifdef HAVE_INTTYPES_H
+#      include <inttypes.h>
+#    endif
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-
-#else
+#  else
 
 // assume that the headers are there inside LibreOffice build when no HAVE_CONFIG_H is defined
-#include <stdint.h>
-#include <inttypes.h>
+#    include <stdint.h>
+#    include <inttypes.h>
 
-#endif
+#  endif
 
 #endif /* _MSC_VER || __DJGPP__ */
+
+// define gmtime_r and localtime_r on Windows, so that can use
+// thread-safe functions on other environments
+#ifdef _WIN32
+#  define gmtime_r(tp,tmp) (gmtime(tp)?(*(tmp)=*gmtime(tp),(tmp)):0)
+#  define localtime_r(tp,tmp) (localtime(tp)?(*(tmp)=*localtime(tp),(tmp)):0)
+#endif
 
 /* ---------- memory  --------------- */
 #if defined(SHAREDPTR_TR1)
@@ -154,7 +159,7 @@ enum { LeftBit = 0x01,  RightBit = 0x02, TopBit=0x4, BottomBit = 0x08, HMiddleBi
 enum NumberingType { NONE, BULLET, ARABIC, LOWERCASE, UPPERCASE, LOWERCASE_ROMAN, UPPERCASE_ROMAN };
 std::string numberingTypeToString(NumberingType type);
 std::string numberingValueToString(NumberingType type, int value);
-enum SubDocumentType { DOC_NONE, DOC_HEADER_FOOTER, DOC_NOTE, DOC_TABLE, DOC_TEXT_BOX, DOC_COMMENT_ANNOTATION };
+enum SubDocumentType { DOC_NONE, DOC_HEADER_FOOTER, DOC_NOTE, DOC_TABLE, DOC_TEXT_BOX, DOC_COMMENT_ANNOTATION, DOC_GRAPHIC_GROUP };
 }
 
 //! the class to store a color
@@ -254,7 +259,7 @@ struct MWAWBorder {
     return m_style != orig.m_style || m_type != orig.m_type ||
            m_width < orig.m_width || m_width > orig.m_width || m_color != orig.m_color;
   }
-  //! compare two cell
+  //! compare two borders
   int compare(MWAWBorder const &orig) const;
 
   //! operator<<
@@ -313,6 +318,9 @@ struct MWAWNote {
 // forward declarations of basic classes and smart pointers
 class MWAWEntry;
 class MWAWFont;
+class MWAWGraphicInterface;
+class MWAWGraphicShape;
+class MWAWGraphicStyle;
 class MWAWHeader;
 class MWAWList;
 class MWAWPageSpan;
@@ -323,7 +331,9 @@ class MWAWSection;
 
 class MWAWContentListener;
 class MWAWFontConverter;
+class MWAWGraphicListener;
 class MWAWInputStream;
+class MWAWListener;
 class MWAWListManager;
 class MWAWParserState;
 class MWAWRSRCParser;
@@ -332,8 +342,12 @@ class MWAWSubDocument;
 typedef shared_ptr<MWAWContentListener> MWAWContentListenerPtr;
 //! a smart pointer of MWAWFontConverter
 typedef shared_ptr<MWAWFontConverter> MWAWFontConverterPtr;
+//! a smart pointer of MWAWGraphicListener
+typedef shared_ptr<MWAWGraphicListener> MWAWGraphicListenerPtr;
 //! a smart pointer of MWAWInputStream
 typedef shared_ptr<MWAWInputStream> MWAWInputStreamPtr;
+//! a smart pointer of MWAWListener
+typedef shared_ptr<MWAWListener> MWAWListenerPtr;
 //! a smart pointer of MWAWListManager
 typedef shared_ptr<MWAWListManager> MWAWListManagerPtr;
 //! a smart pointer of MWAWRSRCParser
@@ -824,6 +838,24 @@ public:
     m_pt[1] += Vec2<T>(val-(val/2),val-(val/2));
   }
 
+  //! returns the union between this and box
+  Box2<T> getUnion(Box2<T> const &box) const {
+    Box2<T> res;
+    res.m_pt[0]=Vec2<T>(m_pt[0][0]<box.m_pt[0][0]?m_pt[0][0] : box.m_pt[0][0],
+                        m_pt[0][1]<box.m_pt[0][1]?m_pt[0][1] : box.m_pt[0][1]);
+    res.m_pt[1]=Vec2<T>(m_pt[1][0]>box.m_pt[1][0]?m_pt[1][0] : box.m_pt[1][0],
+                        m_pt[1][1]>box.m_pt[1][1]?m_pt[1][1] : box.m_pt[1][1]);
+    return res;
+  }
+  //! returns the intersection between this and box
+  Box2<T> getIntersection(Box2<T> const &box) const {
+    Box2<T> res;
+    res.m_pt[0]=Vec2<T>(m_pt[0][0]>box.m_pt[0][0]?m_pt[0][0] : box.m_pt[0][0],
+                        m_pt[0][1]>box.m_pt[0][1]?m_pt[0][1] : box.m_pt[0][1]);
+    res.m_pt[1]=Vec2<T>(m_pt[1][0]<box.m_pt[1][0]?m_pt[1][0] : box.m_pt[1][0],
+                        m_pt[1][1]<box.m_pt[1][1]?m_pt[1][1] : box.m_pt[1][1]);
+    return res;
+  }
   //! comparison operator==
   bool operator==(Box2<T> const &p) const {
     return cmp(p) == 0;
@@ -878,5 +910,11 @@ typedef Box2<float> Box2f;
 /*! \brief Box2 of long */
 typedef Box2<long> Box2l;
 
+// some geometrical function
+namespace libmwaw
+{
+//! rotate a bdox and returns the final bdbox
+Box2f rotateBoxFromCenter(Box2f const &box, float angle);
+}
 #endif /* LIBMWAW_INTERNAL_H */
 // vim: set filetype=cpp tabstop=2 shiftwidth=2 cindent autoindent smartindent noexpandtab:

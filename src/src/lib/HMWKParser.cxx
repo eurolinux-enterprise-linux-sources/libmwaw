@@ -160,9 +160,14 @@ void HMWKParser::init()
   m_textParser.reset(new HMWKText(*this));
 }
 
-bool HMWKParser::sendText(long id, long subId)
+bool HMWKParser::sendText(long id, long subId, bool asGraphic)
 {
-  return m_textParser->sendText(id, subId);
+  return m_textParser->sendText(id, subId, asGraphic);
+}
+
+bool HMWKParser::canSendTextAsGraphic(long id, long subId)
+{
+  return m_textParser->canSendTextAsGraphic(id, subId);
 }
 
 bool HMWKParser::sendZone(long zId)
@@ -224,8 +229,10 @@ void HMWKParser::parse(WPXDocumentInterface *docInterface)
       m_graphParser->sendPageGraphics(tokenIds);
       m_textParser->sendMainText();
 
+#ifdef DEBUG
       m_textParser->flushExtra();
       m_graphParser->flushExtra();
+#endif
     }
     ascii().reset();
   } catch (...) {
@@ -307,6 +314,7 @@ bool HMWKParser::createZones()
   }
 
   // retrieve the text type and pass information to text parser
+  m_graphParser->prepareStructures();
   std::map<long,int> idTypeMap = m_graphParser->getTextFrameInformations();
   m_textParser->updateTextZoneTypes(idTypeMap);
 
@@ -1153,7 +1161,7 @@ bool HMWKParser::checkHeader(MWAWHeader *header, bool strict)
 
   input->seek(m_state->m_zonesListBegin, WPX_SEEK_SET);
   if (header)
-    header->reset(MWAWDocument::HMAC, 1);
+    header->reset(MWAWDocument::MWAW_T_HANMACWORDK, 1);
 
   return true;
 }

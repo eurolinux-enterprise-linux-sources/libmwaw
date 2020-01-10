@@ -6,8 +6,8 @@ AC_PREREQ([2.60])
 # Version informations
 # ====================
 m4_define([libmwaw_version_major],[0])
-m4_define([libmwaw_version_minor],[1])
-m4_define([libmwaw_version_micro],[11])
+m4_define([libmwaw_version_minor],[2])
+m4_define([libmwaw_version_micro],[0])
 m4_define([libmwaw_version],[libmwaw_version_major.libmwaw_version_minor.libmwaw_version_micro])
 
 # =============
@@ -44,6 +44,11 @@ PKG_CHECK_MODULES([WPD],[
 ])
 AC_SUBST(WPD_CFLAGS)
 AC_SUBST(WPD_LIBS)
+PKG_CHECK_MODULES([WPG],[
+    libwpg-0.2 >= 0.2.2
+])
+AC_SUBST(WPG_CFLAGS)
+AC_SUBST(WPG_LIBS)
 
 # =================================
 # Libtool/Version Makefile settings
@@ -71,18 +76,20 @@ AS_CASE([$host],
 		AC_CHECK_TOOL(WINDRES, windres)
 		LIBMWAW_WIN32_RESOURCE=libmwaw-win32res.lo
 		LIBMWAW_STREAM_WIN32_RESOURCE=libmwaw-stream-win32res.lo
+		MWAW2CSV_WIN32_RESOURCE=mwaw2cvg-win32res.lo
 		MWAW2HTML_WIN32_RESOURCE=mwaw2html-win32res.lo
-		MWAW2TEXT_WIN32_RESOURCE=mwaw2text-win32res.lo
 		MWAW2RAW_WIN32_RESOURCE=mwaw2raw-win32res.lo
+		MWAW2TEXT_WIN32_RESOURCE=mwaw2text-win32res.lo
 		MWAWFILE_WIN32_RESOURCE=mwawFile-win32res.lo
 		MWAWZIP_WIN32_RESOURCE=mwawZip-win32res.lo
 	], [
 		native_win32=no
 		LIBMWAW_WIN32_RESOURCE=
 		LIBMWAW_STREAM_WIN32_RESOURCE=
+		MWAW2CSV_WIN32_RESOURCE=
 		MWAW2HTML_WIN32_RESOURCE=
-		MWAW2TEXT_WIN32_RESOURCE=
 		MWAW2RAW_WIN32_RESOURCE=
+		MWAW2TEXT_WIN32_RESOURCE=
 		MWAWFILE_WIN32_RESOURCE=
 		MWAWZIP_WIN32_RESOURCE=
 	]
@@ -91,9 +98,10 @@ AC_MSG_RESULT([$native_win32])
 AM_CONDITIONAL(OS_WIN32, [test "x$native_win32" = "xyes"])
 AC_SUBST(LIBMWAW_WIN32_RESOURCE)
 AC_SUBST(LIBMWAW_STREAM_WIN32_RESOURCE)
+AC_SUBST(MWAW2CSV_WIN32_RESOURCE)
 AC_SUBST(MWAW2HTML_WIN32_RESOURCE)
-AC_SUBST(MWAW2TEXT_WIN32_RESOURCE)
 AC_SUBST(MWAW2RAW_WIN32_RESOURCE)
+AC_SUBST(MWAW2TEXT_WIN32_RESOURCE)
 AC_SUBST(MWAWFILE_WIN32_RESOURCE)
 AC_SUBST(MWAWZIP_WIN32_RESOURCE)
 
@@ -374,6 +382,8 @@ AC_CONFIG_FILES([
 Makefile
 src/Makefile
 src/conv/Makefile
+src/conv/csv/Makefile
+src/conv/csv/mwaw2csv.rc
 src/conv/html/Makefile
 src/conv/html/mwaw2html.rc
 src/conv/raw/Makefile

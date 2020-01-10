@@ -378,20 +378,12 @@ void MSWParser::send(MWAWEntry const &entry)
 
 void MSWParser::send(int id, libmwaw::SubDocumentType type)
 {
-  switch(type) {
-  case libmwaw::DOC_COMMENT_ANNOTATION:
+  if (type==libmwaw::DOC_COMMENT_ANNOTATION)
     m_textParser->sendFieldComment(id);
-    break;
-  case libmwaw::DOC_NOTE:
+  else if (type==libmwaw::DOC_NOTE)
     m_textParser->sendFootnote(id);
-    break;
-  case libmwaw::DOC_NONE:
-  case libmwaw::DOC_HEADER_FOOTER:
-  case libmwaw::DOC_TABLE:
-  case libmwaw::DOC_TEXT_BOX:
-  default:
+  else {
     MWAW_DEBUG_MSG(("MSWParser::send: find unexpected type\n"));
-    break;
   }
 }
 
@@ -769,7 +761,7 @@ bool MSWParser::checkHeader(MWAWHeader *header, bool strict)
     if (!readHeaderEndV3())
       return false;
     if (header)
-      header->reset(MWAWDocument::MSWORD, vers);
+      header->reset(MWAWDocument::MWAW_T_MICROSOFTWORD, vers);
     return true;
   }
 
@@ -802,7 +794,7 @@ bool MSWParser::checkHeader(MWAWHeader *header, bool strict)
 
   // ok, we can finish initialization
   if (header)
-    header->reset(MWAWDocument::MSWORD, vers);
+    header->reset(MWAWDocument::MWAW_T_MICROSOFTWORD, vers);
 
   if (long(input->tell()) != headerSize)
     ascii().addDelimiter(input->tell(), '|');
@@ -856,9 +848,9 @@ bool MSWParser::readHeaderEndV3()
       MWAW_DEBUG_MSG(("MSWParser::readHeaderEndV3: page dimensions seem bad\n"));
     } else {
       getPageSpan().setMarginTop(dim[2]);
-      getPageSpan().setMarginBottom(dim[4]);
       getPageSpan().setMarginLeft(dim[3]);
-      getPageSpan().setMarginRight(dim[5]);
+      getPageSpan().setMarginBottom((dim[4]< 0.5) ? 0.0 : dim[4]-0.5);
+      getPageSpan().setMarginRight((dim[5]< 0.5) ? 0.0 : dim[5]-0.5);
       getPageSpan().setFormLength(dim[0]);
       getPageSpan().setFormWidth(dim[1]);
     }

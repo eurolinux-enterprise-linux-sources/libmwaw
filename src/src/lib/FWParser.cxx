@@ -347,13 +347,13 @@ void FWParser::sendGraphic(int id)
   m_graphParser->sendGraphic(m_state->getFileZoneId(id));
 }
 
-bool FWParser::send(int fileId)
+bool FWParser::send(int fileId, MWAWColor fontColor)
 {
   if (fileId < 0) {
     if (getListener()) getListener()->insertChar(' ');
     return true;
   }
-  return m_textParser->send(fileId);
+  return m_textParser->send(fileId, fontColor);
 }
 
 ////////////////////////////////////////////////////////////
@@ -447,10 +447,49 @@ void FWParser::createDocument(WPXDocumentInterface *documentInterface)
   m_state->m_numPages = numPage;
 
   // create the page list
-  MWAWPageSpan ps(getPageSpan());
-  ps.setPageSpan(m_state->m_numPages+1);
-  std::vector<MWAWPageSpan> pageList(1,ps);
-  //
+  int actHeaderId = -1, actFooterId = -1;
+  shared_ptr<FWParserInternal::SubDocument> headerSubdoc, footerSubdoc;
+  std::vector<MWAWPageSpan> pageList;
+  for (int i = 0; i < m_state->m_numPages; ) {
+    int numSim[2]= {1,1};
+    int headerId =  m_textParser->getHeaderFooterId(true,i+1, numSim[0]);
+    if (headerId != actHeaderId) {
+      actHeaderId = headerId;
+      if (actHeaderId == -1)
+        headerSubdoc.reset();
+      else
+        headerSubdoc.reset
+        (new FWParserInternal::SubDocument(*this, getInput(), headerId));
+    }
+    int footerId =  m_textParser->getHeaderFooterId(false, i+1, numSim[1]);
+    if (footerId != actFooterId) {
+      actFooterId = footerId;
+      if (actFooterId == -1)
+        footerSubdoc.reset();
+      else
+        footerSubdoc.reset
+        (new FWParserInternal::SubDocument(*this, getInput(), footerId));
+    }
+
+    MWAWPageSpan ps(getPageSpan());
+    if (headerSubdoc) {
+      MWAWHeaderFooter header(MWAWHeaderFooter::HEADER, MWAWHeaderFooter::ALL);
+      header.m_subDocument=headerSubdoc;
+      ps.setHeaderFooter(header);
+    }
+    if (footerSubdoc) {
+      MWAWHeaderFooter footer(MWAWHeaderFooter::FOOTER, MWAWHeaderFooter::ALL);
+      footer.m_subDocument=footerSubdoc;
+      ps.setHeaderFooter(footer);
+    }
+    if (numSim[1] < numSim[0]) numSim[0]=numSim[1];
+    if (numSim[0] < 1) numSim[0]=1;
+    ps.setPageSpan(numSim[0]);
+    i+=numSim[0];
+    pageList.push_back(ps);
+  }
+
+  // retrieve the header/footer
   MWAWContentListenerPtr listen(new MWAWContentListener(*getParserState(), pageList, documentInterface));
   setListener(listen);
   listen->startDocument();
@@ -602,7 +641,7 @@ bool FWParser::checkHeader(MWAWHeader *header, bool /*strict*/)
   input->seek(0,WPX_SEEK_SET);
 
   if (header)
-    header->reset(MWAWDocument::FULLW, 1);
+    header->reset(MWAWDocument::MWAW_T_FULLWRITE, 1);
 
   return true;
 }
@@ -1937,18 +1976,11 @@ void FWParser::sendText(int id, libmwaw::SubDocumentType type, MWAWNote::Type wh
   }
   int fId = m_state->getFileZoneId(id);
   MWAWSubDocumentPtr subdoc(new FWParserInternal::SubDocument(*this, getInput(), fId));
-  switch(type) {
-  case libmwaw::DOC_NOTE:
+  if (type==libmwaw::DOC_NOTE)
     getListener()->insertNote(MWAWNote(wh), subdoc);
-    break;
-  case libmwaw::DOC_COMMENT_ANNOTATION:
+  else if (type==libmwaw::DOC_COMMENT_ANNOTATION)
     getListener()->insertComment(subdoc);
-    break;
-  case libmwaw::DOC_HEADER_FOOTER:
-  case libmwaw::DOC_TABLE:
-  case libmwaw::DOC_TEXT_BOX:
-  case libmwaw::DOC_NONE:
-  default:
+  else {
     MWAW_DEBUG_MSG(("FWParser::sendText: unexpected type\n"));
   }
 }

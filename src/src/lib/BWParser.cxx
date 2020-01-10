@@ -254,7 +254,7 @@ void BWParser::createDocument(WPXDocumentInterface *documentInterface)
   shared_ptr<MWAWSubDocument> subDoc;
   for (int i = 0; i <= numPages; ) {
     MWAWPageSpan ps(getPageSpan());
-    int numSim[2];
+    int numSim[2]= {1,1};
     subDoc = m_textParser->getHeader(i, numSim[0]);
     if (subDoc) {
       MWAWHeaderFooter header(MWAWHeaderFooter::HEADER, MWAWHeaderFooter::ALL);
@@ -944,7 +944,7 @@ bool BWParser::checkHeader(MWAWHeader *header, bool strict)
   setVersion(1);
 
   if (header)
-    header->reset(MWAWDocument::BW, 1);
+    header->reset(MWAWDocument::MWAW_T_BEAGLEWORKS, 1);
 
   ascii().addPos(0);
   ascii().addNote(f.str().c_str());

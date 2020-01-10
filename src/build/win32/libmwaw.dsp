@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"Release\lib\libmwaw-0.1.lib"
+# ADD LIB32 /nologo /out:"Release\lib\libmwaw-0.2.lib"
 
 !ELSEIF  "$(CFG)" == "libmwaw - Win32 Debug"
 
@@ -74,7 +74,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"Debug\lib\libmwaw-0.1.lib"
+# ADD LIB32 /nologo /out:"Debug\lib\libmwaw-0.2.lib"
 
 !ENDIF 
 
@@ -104,6 +104,10 @@ SOURCE=..\..\src\lib\BWText.cxx
 # Begin Source File
 
 SOURCE=..\..\src\lib\CWDatabase.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\CWDbaseContent.cxx
 # End Source File
 # Begin Source File
 
@@ -275,6 +279,10 @@ SOURCE=..\..\src\lib\MSKParser.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\src\lib\MSKTable.cxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\src\lib\MSW1Parser.cxx
 # End Source File
 # Begin Source File
@@ -323,6 +331,22 @@ SOURCE=..\..\src\lib\MWAWFontSJISConverter.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\src\lib\MWAWGraphicInterface.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWGraphicListener.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWGraphicShape.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWGraphicStyle.cxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\src\lib\MWAWHeader.cxx
 # End Source File
 # Begin Source File
@@ -355,10 +379,6 @@ SOURCE=..\..\src\lib\MWAWParser.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\lib\MWAWPictBasic.cxx
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\src\lib\MWAWPictBitmap.cxx
 # End Source File
 # Begin Source File
@@ -368,10 +388,6 @@ SOURCE=..\..\src\lib\MWAWPictData.cxx
 # Begin Source File
 
 SOURCE=..\..\src\lib\MWAWPictMac.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\src\lib\MWAWPictOLEContainer.cxx
 # End Source File
 # Begin Source File
 
@@ -476,6 +492,10 @@ SOURCE=..\..\src\lib\BWText.hxx
 # Begin Source File
 
 SOURCE=..\..\src\lib\CWDatabase.hxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\CWDbaseContent.hxx
 # End Source File
 # Begin Source File
 
@@ -651,6 +671,10 @@ SOURCE=..\..\src\lib\MSKParser.hxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\src\lib\MSKTable.hxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\src\lib\MSW1Parser.hxx
 # End Source File
 # Begin Source File
@@ -703,6 +727,22 @@ SOURCE=..\..\src\lib\MWAWFontSJISConverter.hxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\src\lib\MWAWGraphicInterface.hxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWGraphicListener.hxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWGraphicShape.hxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWGraphicStyle.hxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\src\lib\MWAWHeader.hxx
 # End Source File
 # Begin Source File
@@ -712,6 +752,10 @@ SOURCE=..\..\src\lib\MWAWInputStream.hxx
 # Begin Source File
 
 SOURCE=..\..\src\lib\MWAWList.hxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\src\lib\MWAWListener.hxx
 # End Source File
 # Begin Source File
 
@@ -739,10 +783,6 @@ SOURCE=..\..\src\lib\MWAWPict.hxx
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\lib\MWAWPictBasic.hxx
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\src\lib\MWAWPictBitmap.hxx
 # End Source File
 # Begin Source File
@@ -755,10 +795,6 @@ SOURCE=..\..\src\lib\MWAWPictMac.hxx
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\lib\MWAWPictOLEContainer.hxx
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\src\lib\MWAWPosition.hxx
 # End Source File
 # Begin Source File
@@ -767,7 +803,7 @@ SOURCE=..\..\src\lib\MWAWPrinter.hxx
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\inc\libmwaw\MWAWPropertyHandler.hxx
+SOURCE=..\..\src\lib\MWAWPropertyHandler.hxx
 # End Source File
 # Begin Source File
 

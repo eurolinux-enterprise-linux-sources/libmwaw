@@ -39,6 +39,9 @@
 
 #include <libwpd/libwpd.h>
 
+#include "MWAWDebug.hxx"
+#include "MWAWHeader.hxx"
+#include "MWAWInputStream.hxx"
 
 #include "CWParser.hxx"
 

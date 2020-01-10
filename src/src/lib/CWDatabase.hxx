@@ -86,6 +86,12 @@ public:
   //! reads the zone Text DSET
   shared_ptr<CWStruct::DSET> readDatabaseZone
   (CWStruct::DSET const &zone, MWAWEntry const &entry, bool &complete);
+  //! check if we can send a database as graphic
+  bool canSendDatabaseAsGraphic(int) const {
+    return false;
+  }
+  //! sends the zone data to the listener (if it exists )
+  bool sendDatabase(int number);
 
 protected:
 
@@ -93,13 +99,10 @@ protected:
   // Intermediate level
   //
   //! try to read the database structure
-  bool readDatabaseFields(CWDatabaseInternal::Database &dBase);
+  bool readFields(CWDatabaseInternal::Database &dBase);
 
   //! try to read the default structure
-  bool readDatabaseDefaults(CWDatabaseInternal::Database &dBase);
-
-  //! try to read the record structure
-  bool readDatabaseContent(CWDatabaseInternal::Database &dBase);
+  bool readDefaults(CWDatabaseInternal::Database &dBase);
 
   //
   // low level

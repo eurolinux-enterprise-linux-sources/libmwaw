@@ -55,8 +55,8 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.h.in $(srcdir)/libmwaw.pc.in \
 	$(srcdir)/libmwaw.spec.in $(srcdir)/libmwaw-zip.in INSTALL \
-	README ar-lib config.guess config.sub install-sh missing \
-	ltmain.sh
+	README ar-lib config.guess config.sub depcomp install-sh \
+	missing ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -251,6 +251,7 @@ LT_CURRENT = @LT_CURRENT@
 LT_REVISION = @LT_REVISION@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MWAW2CSV_WIN32_RESOURCE = @MWAW2CSV_WIN32_RESOURCE@
 MWAW2HTML_WIN32_RESOURCE = @MWAW2HTML_WIN32_RESOURCE@
 MWAW2RAW_WIN32_RESOURCE = @MWAW2RAW_WIN32_RESOURCE@
 MWAW2TEXT_WIN32_RESOURCE = @MWAW2TEXT_WIN32_RESOURCE@
@@ -286,6 +287,8 @@ VERSION = @VERSION@
 WINDRES = @WINDRES@
 WPD_CFLAGS = @WPD_CFLAGS@
 WPD_LIBS = @WPD_LIBS@
+WPG_CFLAGS = @WPG_CFLAGS@
+WPG_LIBS = @WPG_LIBS@
 XATTR_CFLAGS = @XATTR_CFLAGS@
 ZLIB_CFLAGS = @ZLIB_CFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@

@@ -553,7 +553,7 @@ void NSParser::createDocument(WPXDocumentInterface *documentInterface)
   shared_ptr<MWAWSubDocument> subDoc;
   for (int i = 0; i <= numPages; ) {
     MWAWPageSpan ps(getPageSpan());
-    int numSim[2];
+    int numSim[2]= {1,1};
     subDoc = m_textParser->getHeader(i+1, numSim[0]);
     if (subDoc) {
       MWAWHeaderFooter header(MWAWHeaderFooter::HEADER, MWAWHeaderFooter::ALL);
@@ -806,7 +806,7 @@ bool NSParser::checkHeader(MWAWHeader *header, bool /*strict*/)
 
   setVersion(vers.m_majorVersion);
   if (header)
-    header->reset(MWAWDocument::NISUSW, version());
+    header->reset(MWAWDocument::MWAW_T_NISUSWRITER, version());
 
   return true;
 }
@@ -1671,7 +1671,7 @@ bool NSParser::readPageLimit(MWAWEntry const &entry)
   int numColumns = (int) input->readLong(2)+1;
   int colSeps = (int) input->readLong(2);
   if (!dimOk) ;
-  else if (numColumns <= 0 || numColumns > 8 || colSeps < 0 || colSeps*numColumns >= pageDim[0]) {
+  else if (numColumns <= 0 || numColumns > 8 || colSeps < 0 || colSeps *numColumns >= pageDim[0]) {
     MWAW_DEBUG_MSG(("NSParser::readPageLimit: the columns definition seems odd\n"));
     f << "###";
   } else {

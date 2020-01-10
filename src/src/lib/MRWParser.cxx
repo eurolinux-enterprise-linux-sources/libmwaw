@@ -308,11 +308,11 @@ float MRWParser::getPatternPercent(int id) const
   return m_graphParser->getPatternPercent(id);
 }
 
-void MRWParser::sendToken(int zoneId, long tokenId, MWAWFont const &actFont)
+void MRWParser::sendToken(int zoneId, long tokenId)
 {
   MWAWInputStreamPtr input = getInput();
   long actPos = input->tell();
-  m_graphParser->sendToken(zoneId, tokenId, actFont);
+  m_graphParser->sendToken(zoneId, tokenId);
   input->seek(actPos, WPX_SEEK_SET);
 }
 
@@ -650,7 +650,10 @@ bool MRWParser::readZoneHeader(MRWEntry const &entry, int actId, bool onlyTest)
     unsigned char color[3];
     switch(j) {
     case 0: // version?
-      f << "vers?=" << (data.value(0)>>16) << "[" << (data.value(0)&0xFFFF) << "],";
+      val = data.value(0);
+      if ((val>>16)==1) // checkme v1.6 -> 1[29] while v3.5->1[33]
+        setVersion((val&0xFFFF)<30 ? 1 : 2);
+      f << "vers?=" << (val>>16) << "[" << (val&0xFFFF) << "],";
       break;
     case 1:
       val = data.value(0);
@@ -1485,7 +1488,7 @@ bool MRWParser::checkHeader(MWAWHeader *header, bool strict)
 
   input->seek(0, WPX_SEEK_SET);
   if (header)
-    header->reset(MWAWDocument::MARIW, 1);
+    header->reset(MWAWDocument::MWAW_T_MARINERWRITE, 1);
 
   return true;
 }

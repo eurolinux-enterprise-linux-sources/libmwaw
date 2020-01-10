@@ -31,6 +31,8 @@
 * instead of those above.
 */
 
+#include <map>
+
 #include <libwpd/libwpd.h>
 
 #include "libmwaw_internal.hxx"
@@ -41,7 +43,7 @@
 #include "MWAWParagraph.hxx"
 
 ////////////////////////////////////////////////////////////
-// paragraph
+// tabstop
 ////////////////////////////////////////////////////////////
 void MWAWTabStop::addTo(WPXPropertyListVector &propList, double decalX) const
 {
@@ -87,7 +89,20 @@ void MWAWTabStop::addTo(WPXPropertyListVector &propList, double decalX) const
   propList.append(tab);
 }
 
-//! operator<<
+int MWAWTabStop::cmp(MWAWTabStop const &tabs) const
+{
+  if (m_position < tabs.m_position) return -1;
+  if (m_position > tabs.m_position) return 1;
+  if (m_alignment < tabs.m_alignment) return -1;
+  if (m_alignment > tabs.m_alignment) return 1;
+  if (m_leaderCharacter < tabs.m_leaderCharacter) return -1;
+  if (m_leaderCharacter > tabs.m_leaderCharacter) return 1;
+  if (m_decimalCharacter < tabs.m_decimalCharacter) return -1;
+  if (m_decimalCharacter > tabs.m_decimalCharacter) return 1;
+  return 0;
+}
+
+// operator<<
 std::ostream &operator<<(std::ostream &o, MWAWTabStop const &tab)
 {
   o << tab.m_position;
@@ -139,39 +154,55 @@ MWAWParagraph::~MWAWParagraph()
 {
 }
 
-bool MWAWParagraph::operator!=(MWAWParagraph const &para) const
+int MWAWParagraph::cmp(MWAWParagraph const &para) const
 {
   for(int i = 0; i < 3; i++) {
-    if (*(m_margins[i]) < *(para.m_margins[i]) ||
-        *(m_margins[i]) > *(para.m_margins[i]) ||
-        *(m_spacings[i]) < *(para.m_spacings[i]) ||
-        *(m_spacings[i]) > *(para.m_spacings[i]))
-      return true;
+    if (*(m_margins[i]) < *(para.m_margins[i])) return -1;
+    if (*(m_margins[i]) > *(para.m_margins[i])) return 1;
+    if (*(m_spacings[i]) < *(para.m_spacings[i])) return -1;
+    if (*(m_spacings[i]) > *(para.m_spacings[i])) return 1;
   }
-  if (*m_justify != *para.m_justify || *m_marginsUnit != *para.m_marginsUnit ||
-      *m_spacingsInterlineUnit != *para.m_spacingsInterlineUnit ||
-      *m_spacingsInterlineType != *para.m_spacingsInterlineType)
-    return true;
-  if (*m_tabsRelativeToLeftMargin != *para.m_tabsRelativeToLeftMargin)
-    return true;
-  if (m_tabs->size() != para.m_tabs->size()) return true;
+  if (*m_justify < *para.m_justify) return -1;
+  if (*m_justify > *para.m_justify) return -1;
+  if (*m_marginsUnit < *para.m_marginsUnit) return -1;
+  if (*m_marginsUnit > *para.m_marginsUnit) return -1;
+  if (*m_spacingsInterlineUnit < *para.m_spacingsInterlineUnit) return -1;
+  if (*m_spacingsInterlineUnit > *para.m_spacingsInterlineUnit) return -1;
+  if (*m_spacingsInterlineType < *para.m_spacingsInterlineType) return -1;
+  if (*m_spacingsInterlineType > *para.m_spacingsInterlineType) return -1;
+  if (*m_tabsRelativeToLeftMargin < *para.m_tabsRelativeToLeftMargin) return -1;
+  if (*m_tabsRelativeToLeftMargin > *para.m_tabsRelativeToLeftMargin) return -1;
+
+  if (m_tabs->size() < para.m_tabs->size()) return -1;
+  if (m_tabs->size() > para.m_tabs->size()) return -1;
+
   for (size_t i=0; i < m_tabs->size(); i++) {
-    if ((*m_tabs)[i] != (*para.m_tabs)[i])
-      return true;
+    int diff=(*m_tabs)[i].cmp((*para.m_tabs)[i]);
+    if (diff) return diff;
   }
-  if (*m_breakStatus != *para.m_breakStatus ||
-      *m_listLevelIndex != *para.m_listLevelIndex || *m_listId != *para.m_listId ||
-      *m_listStartValue != *para.m_listStartValue || m_listLevel->cmp(*para.m_listLevel) ||
-      *m_backgroundColor != *para.m_backgroundColor)
-    return true;
-  if (m_borders.size() != para.m_borders.size()) return true;
+  if (*m_breakStatus < *para.m_breakStatus) return -1;
+  if (*m_breakStatus > *para.m_breakStatus) return -1;
+  if (*m_listLevelIndex < *para.m_listLevelIndex) return -1;
+  if (*m_listLevelIndex > *para.m_listLevelIndex) return -1;
+  if (*m_listId < *para.m_listId) return -1;
+  if (*m_listId > *para.m_listId) return -1;
+  if (*m_listStartValue < *para.m_listStartValue) return -1;
+  if (*m_listStartValue > *para.m_listStartValue) return -1;
+  int diff=m_listLevel->cmp(*para.m_listLevel);
+  if (diff) return diff;
+  if (*m_backgroundColor < *para.m_backgroundColor) return -1;
+  if (*m_backgroundColor > *para.m_backgroundColor) return -1;
+
+  if (m_borders.size() < para.m_borders.size()) return -1;
+  if (m_borders.size() > para.m_borders.size()) return 1;
   for (size_t i=0; i < m_borders.size(); i++) {
-    if (m_borders[i].isSet() != para.m_borders[i].isSet() ||
-        *(m_borders[i]) != *(para.m_borders[i]))
-      return true;
+    if (m_borders[i].isSet() != para.m_borders[i].isSet())
+      return m_borders[i].isSet() ? 1 : -1;
+    diff = m_borders[i]->compare(*(para.m_borders[i]));
+    if (diff) return diff;
   }
 
-  return false;
+  return 0;
 }
 
 void MWAWParagraph::insert(MWAWParagraph const &para)
@@ -183,7 +214,19 @@ void MWAWParagraph::insert(MWAWParagraph const &para)
   m_marginsUnit.insert(para.m_marginsUnit);
   m_spacingsInterlineUnit.insert(para.m_spacingsInterlineUnit);
   m_spacingsInterlineType.insert(para.m_spacingsInterlineType);
-  m_tabs.insert(para.m_tabs);
+  if (para.m_tabs.isSet() && m_tabs.isSet()) {
+    std::map<double, MWAWTabStop> all;
+    for (size_t t=0; t <m_tabs->size(); ++t)
+      all[(*m_tabs)[t].m_position]=(*m_tabs)[t];
+    for (size_t t=0; t <para.m_tabs->size(); ++t)
+      all[(*para.m_tabs)[t].m_position]=(*para.m_tabs)[t];
+
+    m_tabs->resize(0);
+    std::map<double, MWAWTabStop>::const_iterator it=all.begin();
+    for ( ; it!=all.end(); ++it)
+      m_tabs->push_back(it->second);
+  } else if (para.m_tabs.isSet())
+    m_tabs=para.m_tabs;
   m_tabsRelativeToLeftMargin.insert(para.m_tabsRelativeToLeftMargin);
   m_justify.insert(para.m_justify);
   m_breakStatus.insert(para.m_breakStatus);

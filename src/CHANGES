@@ -1,5 +1,80 @@
 CHANGES:
 
+10/19/2013:
+- switch to version 0.2: simplify the interface to retrieve graphic created
+  by libmwaw, add possibility to manage password in some near futur, try
+  to make all enum more meaningfy.
+
+10/17/2013:
+- Microsoft Word parser: try to improve the parsings of the character and
+  paragraph properties. This must correct most of the problems concerning the 
+  paragraph properties but only some concerning the character properties.
+
+10/10/2013:
+- AppleWorks/ClarisWorks parser: begin to parse the spreadsheet and
+  database structure + begin to reconstruct a spreadsheet present in a
+  word text document in a table.
+  Create a small tool mwaw2csv to retrieve the main content of a spreadsheet
+  /database AppleWorks/ClarisWorks.
+
+10/07/2013:
+- AppleWorks/ClarisWorks parser: retrieve the patterns, the wallpaper;
+  send the reconstructed bitmaps with the good size; retrieve the accross
+  pages in a drawing document; try to reconstruct a single picture for a
+  group of shape, ...
+
+09/27/2013:
+- FullWrite parser: retrieve the header/footer + better reconstruction of
+  frame's borders
+
+09/25/2013:
+- HanMac Word-J: retrieve the patterns, the textboxes borders and links,
+  try to reconstruct a single picture for a group of shape, ...
+
+09/23/2013:
+- HanMac Word-K: retrieve the patterns, the textboxes borders and links,
+  try to reconstruct a single picture for a group of shape, ...
+
+09/18/2013:
+- add some functions to MWAWGraphicListener: to make it more similar to
+  MWAWContentListener
+- create a virtual parent class MWAWListener which regroups the similar
+  function in MWAWGraphicListener and MWAWContentListner,
+- GreatWorks parser: add pattern+gradient, generate pictures which
+  regroup many shapes, remain some problem with z-index
+
+09/15/2013:
+- make MWAWPictBasic disappear
+
+09/13/2013:
+- add MWAWGraphicListener: a listener to create complex picture; first try, must be improved...
+- add MWAWGraphicInterface: an internal graphic interface a la libwpg-0.3.0 ( which contains
+  functions to output in libwpg-0.2.0 format )
+- begin to remove the calls to the previous classes in MWAWPictBasic...
+
+09/11/2013:
+- add a class MWAWGraphicShape to define basic shapes,
+- begin to remove call to MWAWPictBasic to prepare the creation of a MWAWGraphicListener
+- check that Acta, BeagleWorks/WordPerfect Work, LightWay Text, MacDoc, MacWrite,
+  Mariner Write, Nisus Writer, WriterPlus, Z-Write use the new properties' classes
+
+09/07/2013:
+- More Parser: recognize basic picture in the main data text
+- check that DOCMaker, eDoc, More, MindWrite, SimpleText, Tex-Edit, WriteNow
+   use the new properties' classes,
+
+09/06/2013:
+- refactor the graphic generation: add classes to define complex graphic
+  styles and modify the basic shapes, text box and group classes to create
+  more complex pictures. 
+  This will probably imply to introduce a GraphicListener in some near future,
+  but not now...
+- modify Microsoft Works parser to use these classes to generate ( when possible)
+  graphics with pattern, gradient background and to render a group of simple
+  shapes and text in one graphic (when possible)
+
+============== end of version 0.1. =================
+
 07/31/2013:
 - recognize more WriteNow 1.0 files
 
@@ -23,7 +98,6 @@ CHANGES:
   HanMac Word-K, Nisus Writer, Z-Write use the new properties' classes,
 - HanMac Word-J, HanMac Word-K: retrieve the extra line's style in a table's
   cell,
-
 
 07/07/2013:
 - add a parser for MacDoc v1.3 document and self-reading document
@@ -243,7 +317,7 @@ CHANGES:
 - rename all the files to simplify the hierarchy,
   which implies a major version bump:-~,
 
-============== end of version 0. =================
+============== end of version 0.0. =================
 04/14/2012: 
 - add Microsoft Works 1.0, 2.0 parser
 - add a crude parser for FullWrite Professional

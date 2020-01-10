@@ -39,14 +39,13 @@
 #  define CW_STYLE_MANAGER
 
 #include <iostream>
-#include <map>
-#include <set>
 #include <string>
 #include <vector>
 
 #include "libmwaw_internal.hxx"
 
 #include "MWAWDebug.hxx"
+#include "MWAWGraphicStyle.hxx"
 #include "MWAWInputStream.hxx"
 
 class CWParser;
@@ -60,7 +59,7 @@ struct State;
 class CWStyleManager
 {
 public:
-  struct Graphic;
+  struct CellFormat;
   struct KSEN;
   struct Style;
 public:
@@ -69,18 +68,39 @@ public:
   //! destructor
   ~CWStyleManager();
 
-  /* try to read the styles definition (in v4-6) */
+  //! reads a color map zone ( v4-v6)
+  bool readColorList(MWAWEntry const &entry);
+  //! reads a pattern map zone ( v2)
+  bool readPatternList(long endPos=-1);
+  //! reads a gradient map zone ( v2)
+  bool readGradientList(long endPos=-1);
+  /** try to read the styles definition (in v4-6) */
   bool readStyles(MWAWEntry const &entry);
+  //! update a style using a gradiant id
+  bool updateGradient(int grad, MWAWGraphicStyle &style) const;
+  //! update a style using a wall paper id
+  bool updateWallPaper(int wall, MWAWGraphicStyle &style) const;
 
   //! return a mac font id corresponding to a local id
   int getFontId(int localId) const;
+  //! return the color which corresponds to an id (if possible)
+  bool getColor(int id, MWAWColor &col) const;
+  //! return the pattern which corresponds to an id.
+  bool getPattern(int id, MWAWGraphicStyle::Pattern &pattern, float &percent) const;
 
   //! return the style corresponding to a styleId
   bool get(int styleId, Style &style) const;
+  //! return the font corresponding to a fontId
+  bool get(int fontId, MWAWFont &font) const;
+  //! return the cell format corresponding to a cellFormatId
+  bool get(int formatId, CellFormat &format) const;
   //! return the ksen style corresponding to a ksenId
   bool get(int ksenId, KSEN &ksen) const;
   //! return the graphic style corresponding to a graphicId
-  bool get(int graphId, Graphic &graph) const;
+  bool get(int graphId, MWAWGraphicStyle &graph) const;
+
+  //! try to read a named font
+  bool readFont(int id, int fontSize, MWAWFont &font);
 
 protected:
   //! return the file version
@@ -98,12 +118,14 @@ protected:
   bool readCellStyles(int N, int fSz);
   /** read the font name style zone */
   bool readFontNames(int N, int fSz);
-  /** read a Graphic sequence */
+  /** read a GraphicStyle sequence */
   bool readGraphStyles(int N, int fSz);
   //! read a KSEN sequence
   bool readKSEN(int N, int fSz);
   /** read a STYL Name sequence */
   bool readStyleNames(int N, int fSz);
+  /** read a STYL_CHAR Font sequence */
+  bool readStyleFonts(int N, int fSz);
 
 protected:
   //! the parser state
@@ -118,31 +140,25 @@ private:
   CWStyleManager &operator=(CWStyleManager const &orig);
 
 public:
-  //! the Graphic structure in a CWStyleManager
-  struct Graphic {
+  //! the CELL structure a structure related to number/date format
+  struct CellFormat {
     //! constructor
-    Graphic() : m_lineWidth(1), m_extra("") {
-      for (int i = 0; i < 2; i++) {
-        m_pattern[i] = -1;
-        m_patternPercent[i] = 1;
-      }
-      m_color[0] = MWAWColor::black();
-      m_color[1] = MWAWColor::white();
+    CellFormat() : m_justify(0), m_format(-1), m_numDigits(2), m_separateThousand(false), m_parentheseNegatif(false), m_wrap(false), m_extra("") {
     }
-    //! returns the line color
-    MWAWColor getLineColor() const;
-    //! returns the surface color
-    MWAWColor getSurfaceColor() const;
     //! operator<<
-    friend std::ostream &operator<<(std::ostream &o, Graphic const &graph);
-    //! the line width
-    int m_lineWidth;
-    //! the line and surface color
-    MWAWColor m_color[2];
-    //! the line an surface pattern id
-    int m_pattern[2];
-    //! the line an surface pattern percent
-    float m_patternPercent[2];
+    friend std::ostream &operator<<(std::ostream &o, CellFormat const &form);
+    //! the justification: 0:default, 1: left, 2: center, 3: right
+    int m_justify;
+    //! the field format: number, string, currency, ..
+    int m_format;
+    //! the number of digit after the commat
+    int m_numDigits;
+    //! true if we need to add separator for thousand
+    bool m_separateThousand;
+    //! true if negatif number are printed with parentheses
+    bool m_parentheseNegatif;
+    //! true if the cell content is wrapped
+    bool m_wrap;
     //! extra data
     std::string m_extra;
   };
@@ -169,7 +185,7 @@ public:
   //! the structure to store the style in a CWStyleManager
   struct Style {
     //! constructor
-    Style() : m_fontId(-1), m_fontHash(-1), m_rulerId(-1), m_rulerHash(-1), m_ksenId(-1), m_graphicId(-1), m_localStyleId(-1), m_styleId(-1), m_extra("") {
+    Style() : m_fontId(-1), m_cellFormatId(-1), m_rulerId(-1), m_rulerHash(-1), m_ksenId(-1), m_graphicId(-1), m_localStyleId(-1), m_styleId(-1), m_extra("") {
     }
 
     //! operator<<
@@ -177,8 +193,8 @@ public:
 
     //! the char
     int m_fontId;
-    //! the fontHash id
-    int m_fontHash;
+    //! the formatId
+    int m_cellFormatId;
     //! the ruler
     int m_rulerId;
     //! the rulerHash id

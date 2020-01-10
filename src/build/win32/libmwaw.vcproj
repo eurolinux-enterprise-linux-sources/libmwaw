@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\inc,$(LIBWPD_INCLUDE_DIR),$(BOOST_INCLUDE_DIR),$(ZLIB_INCLUDE_DIR)"
+				AdditionalIncludeDirectories="..\..\inc,$(LIBWPD_INCLUDE_DIR),$(LIBWPG_INCLUDE_DIR),$(BOOST_INCLUDE_DIR),$(ZLIB_INCLUDE_DIR)"
 				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="Release\lib\libmwaw-0.1.lib"
+				OutputFile="Release\lib\libmwaw-0.2.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -116,7 +116,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\inc,$(LIBWPD_INCLUDE_DIR),$(BOOST_INCLUDE_DIR),$(ZLIB_INCLUDE_DIR)"
+				AdditionalIncludeDirectories="..\..\inc,$(LIBWPD_INCLUDE_DIR),$(LIBWPG_INCLUDE_DIR),$(BOOST_INCLUDE_DIR),$(ZLIB_INCLUDE_DIR)"
 				PreprocessorDefinitions="_DEBUG;DEBUG;WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -143,7 +143,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="Debug\lib\libmwaw-0.1.lib"
+				OutputFile="Debug\lib\libmwaw-0.2.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -187,9 +187,12 @@
 				RelativePath="..\..\src\lib\BWText.cxx"
 				>
 			</File>
-			</File>
 			<File
 				RelativePath="..\..\src\lib\CWDatabase.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\CWDbaseContent.cxx"
 				>
 			</File>
 			<File
@@ -361,6 +364,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\lib\MSKTable.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\lib\MSW1Parser.cxx"
 				>
 			</File>
@@ -409,6 +416,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\lib\MWAWGraphicInterface.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWGraphicListener.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWGraphicShape.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWGraphicStyle.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\lib\MWAWHeader.cxx"
 				>
 			</File>
@@ -441,10 +464,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\MWAWPictBasic.cxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\MWAWPictBitmap.cxx"
 				>
 			</File>
@@ -454,10 +473,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\lib\MWAWPictMac.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\MWAWPictOLEContainer.cxx"
 				>
 			</File>
 			<File
@@ -563,6 +578,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\lib\CWDatabase.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\CWDbaseContent.hxx"
 				>
 			</File>
 			<File
@@ -738,6 +757,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\lib\MSKTable.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\lib\MSW1Parser.hxx"
 				>
 			</File>
@@ -790,6 +813,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\lib\MWAWGraphicInterface.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWGraphicListener.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWGraphicShape.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWGraphicStyle.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\lib\MWAWHeader.hxx"
 				>
 			</File>
@@ -799,6 +838,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\lib\MWAWList.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\lib\MWAWListener.hxx"
 				>
 			</File>
 			<File
@@ -826,10 +869,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\MWAWPictBasic.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\MWAWPictBitmap.hxx"
 				>
 			</File>
@@ -842,10 +881,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\MWAWPictOLEContainer.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\MWAWPosition.hxx"
 				>
 			</File>
@@ -854,7 +889,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\inc\libmwaw\MWAWPropertyHandler.hxx"
+				RelativePath="..\..\src\lib\MWAWPropertyHandler.hxx"
 				>
 			</File>
 			<File

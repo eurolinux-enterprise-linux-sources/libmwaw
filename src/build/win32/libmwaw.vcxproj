@@ -44,7 +44,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\inc;$(LIBWPD_INCLUDE_DIR);$(BOOST_INCLUDE_DIR);$(ZLIB_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\inc;$(LIBWPD_INCLUDE_DIR);$(LIBWPG_INCLUDE_DIR);$(BOOST_INCLUDE_DIR);$(ZLIB_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -63,7 +63,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>Release\lib\libmwaw-0.1.lib</OutputFile>
+      <OutputFile>Release\lib\libmwaw-0.2.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>
@@ -74,7 +74,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\inc;$(LIBWPD_INCLUDE_DIR);$(BOOST_INCLUDE_DIR);$(ZLIB_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\inc;$(LIBWPD_INCLUDE_DIR);$(LIBWPG_INCLUDE_DIR);$(BOOST_INCLUDE_DIR);$(ZLIB_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;DEBUG;WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -93,7 +93,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>Debug\lib\libmwaw-0.1.lib</OutputFile>
+      <OutputFile>Debug\lib\libmwaw-0.2.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>
@@ -119,6 +119,10 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="..\..\src\lib\CWDatabase.cxx">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lib\CWDbaseContent.cxx">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -286,6 +290,10 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\..\src\lib\MSKTable.cxx">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <ClCompile Include="..\..\src\lib\MSW1Parser.cxx">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -334,6 +342,22 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="..\..\src\lib\MWAWGraphicInterface.cxx">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lib\MWAWGraphicListener.cxx">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lib\MWAWGraphicShape.cxx">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lib\MWAWGraphicStyle.cxx">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <ClCompile Include="..\..\src\lib\MWAWHeader.cxx">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -366,10 +390,6 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="..\..\src\lib\MWAWPictBasic.cxx">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="..\..\src\lib\MWAWPictBitmap.cxx">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -379,10 +399,6 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="..\..\src\lib\MWAWPictMac.cxx">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <ClCompile Include="..\..\src\lib\MWAWPictOLEContainer.cxx">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -474,12 +490,12 @@
   <ItemGroup>
     <ClInclude Include="..\..\inc\libmwaw\libmwaw.hxx" />
     <ClInclude Include="..\..\inc\libmwaw\MWAWDocument.hxx" />
-    <ClInclude Include="..\..\inc\libmwaw\MWAWPropertyHandler.hxx" />
     <ClInclude Include="..\..\src\lib\ACParser.hxx" />
     <ClInclude Include="..\..\src\lib\ACText.hxx" />
     <ClInclude Include="..\..\src\lib\BWParser.hxx" />
     <ClInclude Include="..\..\src\lib\BWText.hxx" />
     <ClInclude Include="..\..\src\lib\CWDatabase.hxx" />
+    <ClInclude Include="..\..\src\lib\CWDbaseContent.hxx" />
     <ClInclude Include="..\..\src\lib\CWGraph.hxx" />
     <ClInclude Include="..\..\src\lib\CWParser.hxx" />
     <ClInclude Include="..\..\src\lib\CWPresentation.hxx" />
@@ -521,6 +537,7 @@
     <ClInclude Include="..\..\src\lib\MSK4Zone.hxx" />
     <ClInclude Include="..\..\src\lib\MSKGraph.hxx" />
     <ClInclude Include="..\..\src\lib\MSKParser.hxx" />
+    <ClInclude Include="..\..\src\lib\MSKTable.hxx" />
     <ClInclude Include="..\..\src\lib\MSW1Parser.hxx" />
     <ClInclude Include="..\..\src\lib\MSWParser.hxx" />
     <ClInclude Include="..\..\src\lib\MSWStruct.hxx" />
@@ -533,22 +550,26 @@
     <ClInclude Include="..\..\src\lib\MWAWFont.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWFontConverter.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWFontSJISConverter.hxx" />
+    <ClInclude Include="..\..\src\lib\MWAWGraphicInterface.hxx" />
+    <ClInclude Include="..\..\src\lib\MWAWGraphicListener.hxx" />
+    <ClInclude Include="..\..\src\lib\MWAWGraphicShape.hxx" />
+    <ClInclude Include="..\..\src\lib\MWAWGraphicStyle.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWHeader.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWInputStream.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWList.hxx" />
+    <ClInclude Include="..\..\src\lib\MWAWListener.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWOLEParser.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWOLEStream.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPageSpan.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWParagraph.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWParser.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPict.hxx" />
-    <ClInclude Include="..\..\src\lib\MWAWPictBasic.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPictBitmap.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPictData.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPictMac.hxx" />
-    <ClInclude Include="..\..\src\lib\MWAWPictOLEContainer.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPosition.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWPrinter.hxx" />
+    <ClInclude Include="..\..\src\lib\MWAWPropertyHandler.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWRSRCParser.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWSection.hxx" />
     <ClInclude Include="..\..\src\lib\MWAWSubDocument.hxx" />

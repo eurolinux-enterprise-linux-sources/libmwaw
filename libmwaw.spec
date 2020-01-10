@@ -1,27 +1,36 @@
-%global apiversion 0.1
+%global apiversion 0.2
 
 Name: libmwaw
-Version: 0.1.11
-Release: 3%{?dist}
-Summary: Import library for some old mac text documents
+Version: 0.2.0
+Release: 4%{?dist}
+Summary: An import library for many old mac document formats
 
 Group: System Environment/Libraries
-# The entire source code is LGPLv2+/MPLv2.0 except
-# src/lib/MWAWOLEStream.[ch]xx which are BSD. There is also
-# src/tools/zip/zip.cpp which is GPLv2+, but we do not build the binary
-# it is used for.
-License: (LGPLv2+ or MPLv2.0) and BSD
+License: LGPLv2+ or MPLv2.0
 URL: http://sourceforge.net/projects/libmwaw/
 Source: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz
 
 BuildRequires: boost-devel
 BuildRequires: doxygen
-BuildRequires: libwpd-devel
+BuildRequires: help2man
+BuildRequires: pkgconfig(libwpd-0.9)
+BuildRequires: pkgconfig(libwpg-0.2)
+
+Patch0: 0001-std-isfinite-is-C-11.patch
+Patch1: 0002-use-correct-type.patch
+Patch2: 0003-Correct-some-cppcheck-errors-change-code-to-avoid-ca.patch
+Patch3: 0004-avoid-leak.patch
+Patch4: 0005-ClarisWorks-parser-try-to-reconstruct-compressed-bit.patch
+Patch5: 0006-ClarisWorks-parser-use-the-page-size-to-define-the-b.patch
+Patch6: 0007-MacWrite-MacWrite-II-parser-try-to-accept-more-files.patch
+Patch7: 0008-Correct-a-potential-out-of-bounds-problem.patch
 
 %description
-libmwaw contains some import filters for old mac text documents
-(MacWrite, ClarisWorks, ... ) based on top of the libwpd (which is
-already used in three word processors). 
+libmwaw contains import filters for many old mac documents, mostly text
+formats like ClarisWorks, MacWrite or MS Word for Mac, but it has a
+limited support for vector drawings and spreadsheets as well (limited in
+the sense that it treats them as text documents). Full list of supported
+formats is available at https://sourceforge.net/p/libmwaw/wiki/Home/ .
 
 %package devel
 Summary: Development files for %{name}
@@ -43,17 +52,14 @@ The %{name}-doc package contains documentation files for %{name}.
 %package tools
 Summary: Tools to transform the supported formats into other formats
 Group: Applications/Publishing
-License: LGPLv2+
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description tools
 Tools to transform the supported document formats into other formats.
-Supported output formats are XHTML, text and raw.
-
+Supported output formats are CSV, XHTML, text and raw.
 
 %prep
-%setup -q
-
+%autosetup -p1
 
 %build
 %configure --disable-static --disable-werror --disable-zip --enable-docs
@@ -63,6 +69,11 @@ sed -i \
     libtool
 make %{?_smp_mflags} V=1
 
+export LD_LIBRARY_PATH=`pwd`/src/lib/.libs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+help2man -N -n 'convert Mac spreadsheet into CSV' -o mwaw2csv.1 ./src/conv/csv/.libs/mwaw2csv
+help2man -N -n 'debug the conversion library' -o mwaw2raw.1 ./src/conv/raw/.libs/mwaw2raw
+help2man -N -n 'convert Mac text document into HTML' -o mwaw2html.1 ./src/conv/html/.libs/mwaw2html
+help2man -N -n 'convert Mac text document into plain text' -o mwaw2text.1 ./src/conv/text/.libs/mwaw2text
 
 %install
 make install DESTDIR=%{buildroot}
@@ -72,36 +83,40 @@ rm -f %{buildroot}/%{_bindir}/mwawFile
 # rhbz#1001297 we install API docs directly from build
 rm -rf %{buildroot}/%{_docdir}/%{name}
 
+install -m 0755 -d %{buildroot}/%{_mandir}/man1
+install -m 0644 mwaw2*.1 %{buildroot}/%{_mandir}/man1
 
 %post -p /sbin/ldconfig
-
-
 %postun -p /sbin/ldconfig
-
 
 %files
 %doc CHANGES COPYING.* README
 %{_libdir}/%{name}-%{apiversion}.so.*
 
-
 %files devel
+%doc HACKING
 %{_includedir}/%{name}-%{apiversion}
 %{_libdir}/%{name}-%{apiversion}.so
 %{_libdir}/pkgconfig/%{name}-%{apiversion}.pc
-
 
 %files doc
 %doc COPYING.*
 %doc docs/doxygen/html
 
-
 %files tools
+%{_bindir}/mwaw2csv
 %{_bindir}/mwaw2html
 %{_bindir}/mwaw2raw
 %{_bindir}/mwaw2text
-
+%{_mandir}/man1/mwaw2csv.1*
+%{_mandir}/man1/mwaw2html.1*
+%{_mandir}/man1/mwaw2raw.1*
+%{_mandir}/man1/mwaw2text.1*
 
 %changelog
+* Fri Aug 22 2014 David Tardon <dtardon@redhat.com> - 0.2.0-4
+- Resolves: rhbz#1132070 rebase to 0.2.0
+
 * Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.1.11-3
 - Mass rebuild 2014-01-24
 
