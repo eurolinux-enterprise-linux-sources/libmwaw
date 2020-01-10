@@ -32,6 +32,8 @@
 
 #include <string>
 
+#include "zip_internal.h"
+
 namespace libmwaw_zip
 {
 class InputStream;
@@ -41,7 +43,8 @@ class XAttr
 {
 public:
   //! constructor
-  XAttr(char const *path) : m_fName("") {
+  XAttr(char const *path) : m_fName("")
+  {
     if (path) m_fName=path;
   }
   /** return a inputstream corresponding to the MacClassic OS attributes (if possible) */

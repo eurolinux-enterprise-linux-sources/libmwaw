@@ -1,5 +1,5 @@
 %define name libmwaw
-%define version 0.2.0
+%define version 0.3.5
 %define  RELEASE 1
 %define  release     %{?CUSTOM_RELEASE} %{!?CUSTOM_RELEASE:%RELEASE}
 
@@ -12,8 +12,8 @@ Group: System Environment/Libraries
 URL: http://libmwaw.sourceforge.net/
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 License: LGPL
-BuildRequires: libwpd-devel >= 0.9.0, gcc-c++, libstdc++-devel, pkgconfig
-Requires: libwpd >= 0.9.0
+BuildRequires: librevenge-devel >= 0.0.0, gcc-c++, libstdc++-devel, pkgconfig
+Requires: librevenge >= 0.0.0
 
 %description
 Library that handles ClarisWorks, MacWrite, WriteNow documents.
@@ -73,7 +73,7 @@ umask 022
 
 %files
 %defattr(644,root,root,755)
-%{_libdir}/libmwaw*-0.2.so.*
+%{_libdir}/libmwaw*-0.3.so.*
 
 %if %{!?_without_stream:1}%{?_without_stream:0}
 %files tools
@@ -83,14 +83,14 @@ umask 022
 
 %files devel
 %defattr(644,root,root,755)
-%{_libdir}/libmwaw*-0.2.so
-#%{_libdir}/libmwaw*-0.2.*a
-%{_libdir}/pkgconfig/libmwaw*-0.2.pc
-%{_includedir}/libmwaw-0.2/libmwaw
+%{_libdir}/libmwaw*-0.3.so
+#%{_libdir}/libmwaw*-0.3.*a
+%{_libdir}/pkgconfig/libmwaw*-0.3.pc
+%{_includedir}/libmwaw-0.3/libmwaw
 
 %if %{!?_without_docs:1}%{?_without_docs:0}
 %files docs
-%{_datadir}/doc/libmwaw-0.2.0/*
+%{_datadir}/doc/libmwaw-0.3.5/*
 %endif
 
 %changelog

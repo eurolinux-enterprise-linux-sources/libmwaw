@@ -27,6 +27,10 @@
 * instead of those above.
 */
 
+#ifndef FILE_INTERNAL_H
+#  define FILE_INTERNAL_H
+
+#include <string.h>
 #include <stdio.h>
 
 #ifdef DEBUG
@@ -35,4 +39,5 @@
 #define MWAW_DEBUG_MSG(M)
 #endif
 
+#endif
 // vim: set filetype=cpp tabstop=2 shiftwidth=2 cindent autoindent smartindent noexpandtab:

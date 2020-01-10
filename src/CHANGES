@@ -1,5 +1,164 @@
 CHANGES:
 
+5/10/2015:
+- add a parser for MacDraft v1 Document
+
+4/29/2015:
+- add a parser for ClarisDraw Document
+
+4/18/2015:
+- RagTime v5-v6 parser(not functional): continue to works on this filter,
+  try to find the different kinds of cluster and how to parse them, ...
+- AppleWorks/ClarisWorks parser[spreadsheet]: do not remove first empty row/columns.
+- remove all assert calls
+- rename Box2,Vec2,... in MWAWBox2, MWAWVec2,... to avoid potential name's conflict
+
+-------- version 0.3.5 (start)  -------------
+
+12/26/2014:
+- modify API's functions to avoid potential throw.
+
+11/9/2014:
+- AppleWorks/ClarisWorks parser[draw]: 
+  try to send master pages on each page of the final documents
+  try to do not cut shapes, pictures which are on several pages (by creating bigger pages)
+
+10/29/2014:
+- MacDraw Pro: add a parser for MacDraw Pro v1
+
+-------- version 0.3.4 (start)  -------------
+
+10/2/2014:
+- RagTime v5-v6: begin to find the main structures in a document, to be continued...
+- fix some coverity problems.
+
+9/12/2014:
+- AppleWorks: add a presentation parser
+
+8/22/2014:
+- MacDraw II: add a parser for MacDraw II v1.0-v1.1
+
+-------- version 0.3.3 (start)  -------------
+
+7/28/2014:
+- AppleWorks/ClarisWorks: manage multiple headers/footers + better rebuilding of complex group
+
+7/1/2014:
+- MacDraw: add a parser for v0 and v1 documents
+
+6/22/2014:
+- RagTime: add a parser to parse v2 and v3 documents
+
+6/6/2014:
+- rewrite MWAWCellContent::double2Date to avoid problem with 32/64 time_t values
+- correct many <<small>> problems
+
+-------- version 0.3.2 (start)  -------------
+
+5/23/2014
+- create version 0.3.1 to be in correspondance with librevenge-0.0.0
+
+5/13/2014
+- add code to create embedded spreadsheet
+- AppleWorks/ClarisWorks: send page's embedded spreadsheets as spreadsheet (instead of table) 
+
+-------- version 0.3.1 (start)  -------------
+
+4/16/2014
+- GreatWorks: add a database parser which uses spreadsheet interface
+
+4/8/2014
+- BeagleWorks/WordPerfect Works: add a database parser which uses spreadsheet interface
+
+4/3/2014
+- MicrosoftWorks: add a database parser which uses spreadsheet interface
+
+3/29/2014
+- MicrosoftWorks: add a graphic parser(must find more document to improve it)
+
+3/21/2014
+- GreatWorks: replace the parser of vector graphic documents by a parser
+  which generates graphic documents + correct to code to reconstruct arc/pie
+
+3/19/2014
+- BeagleWorks/WordPerfect Works: add parser of vector graphic documents
+
+3/13/2014
+- SuperPaint: add a parser of drawing SuperPaint v1 document
+
+3/7/2014
+- SuperPaint: add a parser of Paint SuperPaint v1 document
+
+3/5/2014:
+- AppleWorks/ClarisWorks: make the parser of the paint documents
+   a parser which creates graphic (instead of a text document).
+- MacPaint: add a parser of MacPaint document + move the code
+   to parse GreatWorks v1 paint files (which have the same format)
+   in this parser.
+3/4/2014:
+- GreatWorks: add parser of paint documents
+3/3/2014:
+- BeagleWorks/WordPerfect Work: add parser of paint documents
+2/28/2014:
+- transform MWAWGraphicListener into a listener able to export draw files
+
+2/21/2014:
+- Claris Resolve: add a spreadsheet parser (only export spreadsheet's content
+  but not the frames)
+- Claris Resolve/Wingz: try to decode encrypted files
+
+2/14/2014:
+- Wingz: add a spreadsheet parser (only export spreadsheet's content
+  but not the frames)
+- check that the output of the different executables are compatible with
+  help2man --help-option=-h --version-option=-v --no-discard-stderr EXECUTABLE
+
+2/2/2014:
+- AppleWorks/ClarisWorks: add a spreadsheet parser for spreadsheet
+  (only export main spreadsheet's content but not the frames), and
+  for database(export the main database content row by row as a
+  spreadsheet)
+
+1/23/2014:
+- add some enums of pure spreadsheet applications...
+
+1/22/2014:
+- GreatWorks: add a spreadsheet parser(main content + some graphics)
+
+1/17/2014:
+- MicrosoftWorks: add a spreadsheet parser(main content + some graphics)
+
+1/10/2014:
+- rename all the parser files to recognize more easily the parser...
+
+1/6/2014:
+- BeagleWorks/WordPerfect Work: add code to retrieve chart, very basic,
+  ie. retrieve only the data ranges:-~
+- add a class MWAWChart to store and create some basic charts
+
+12/26/2013:
+- rename mwaw2odt in mwaw2odf in writerperfect
+- BeagleWorks/WordPerfect Work: add a spreadsheet parser
+
+12/22/2013:
+- add a listener MWAWSpreadsheetListener to create spreadsheet document
+
+12/18/2013:
+- create simple graphic shapes directly (rectangles, lines, cicles, polygon),
+  ie. no longer create an embedded object to export a single graphic shapes.
+  Note: the path shapes and the shapes' group continue to create an embedded
+  object 
+
+11/02/2013:
+- update libmwaw to depend on librevenge
+
+============== end of version 0.2. =================
+
+12/02/2013:
+- AppleWorks/ClarisWorks parser: recognize more bitmap
+
+-------- version 0.2.1 (start)  -------------
+
 10/19/2013:
 - switch to version 0.2: simplify the interface to retrieve graphic created
   by libmwaw, add possibility to manage password in some near futur, try
@@ -114,14 +273,14 @@ CHANGES:
 07/02/2013:
 - refactor the MWAWCell and MWAWTable classes
 
--------- version 1.11 (start)  -------------
+-------- version 0.1.11 (start)  -------------
 
 06/24/2013:
 - add a parser for BeagleWorks v1.0 and WordPerfect Works v1.2
 - optimize a little the detection of a hqx/zip Document
 
 06/14/2013:
-- modify the code to use WPX_SEEK_END when possible
+- modify the code to use RVNG_SEEK_END when possible
 
 06/12/2013:
 - add a parser for GreatWorks v1-v2 to read text and draw document
@@ -131,7 +290,7 @@ CHANGES:
   part but not the slide/tree parts ( one days in a Library
   to retrieve slides ? )
 
--------- version 1.10 (start)  -------------
+-------- version 0.1.10 (start)  -------------
 
 05/13/2013:
 - improve a little the Microsoft Word filter to better manage
@@ -164,7 +323,7 @@ CHANGES:
 - MWAWContentListener : add a sanity check to insure that at most
   200 very small pictures are generated.
 
-04/14/2013: ----- version 1.9 (start) ---------
+04/14/2013: ----- version 0.1.9 (start) ---------
 
 04/14/2013:
 - check that the Microsoft Word parser use all
@@ -176,7 +335,7 @@ CHANGES:
 - add parser for HanMac Word-J document
 - HanMac Word-K: retrieve header/footer, footnote, section, ...
 
-03/12/2013: ----- version 1.8 (start) ---------
+03/12/2013: ----- version 0.1.8 (start) ---------
 
 03/12/2013:
 - skip version 1.6 ( to be coherent with tag )
@@ -208,7 +367,7 @@ CHANGES:
 02/06/2013:
 - add a parser for eDOC v2.1 document
 
-01/30/2013: ----- version 1.7 (start) ---------
+01/30/2013: ----- version 0.1.7 (start) ---------
 
 01/30/2013
 - update Mariner Write and Microsoft Word to use new font properties,
@@ -239,7 +398,7 @@ CHANGES:
   but not to the second parser ( ie. the SJIS-encoding is not even detected in
   my 2 Japanese's files :-~ )
 
-01/01/2013: ----- version 1.5 (start) ---------
+01/01/2013: ----- version 0.1.5 (start) ---------
 
 12/30/2012
 - add a first parser for Z-Write 1.3.
@@ -258,7 +417,7 @@ CHANGES:
   in debug mode, the HanMac Word-J (2.0.4) are also recognised and a few
   zones are parsed but no output is generated...
 
-11/12/2012: ----- version 1.4 (start) ---------
+11/12/2012: ----- version 0.1.4 (start) ---------
 
 11/12/2012
 - try to improve a little the claris/appleworks parser
@@ -280,7 +439,7 @@ CHANGES:
   ( understand better two of the three main structures + begin to
     send rulers, some anchor picture and some variable picture )
 
-09/30/2012: ----- version 1.3 (start) ---------
+09/30/2012: ----- version 0.1.3 (start) ---------
 
 10/09/2012:
 - add a Microsoft Word parser for v1 and v3 (incomplete)
@@ -297,7 +456,7 @@ CHANGES:
 - try to sign the libraries and the executable:
     lib[mwaw|wpd|wpg]*.dylib and mwaw2odt
 
-07/31/2012: ----- version 1.2 (start) ---------
+07/31/2012: ----- version 0.1.2 (start) ---------
 
 07/30/2012:
 - retrieve tables and pictures in Microsoft Word 4-5
@@ -308,12 +467,12 @@ CHANGES:
 06/28/2012:
 - add MindWrite 2.1 parser
 
-06/28/2012: ----- version 1.1 (start) ---------
+06/28/2012: ----- version 0.1.1 (start) ---------
 
 05/28/2012:
 - add a Microsoft Works 3.0 parser
 
-05/20/2012: ----- version 1.0 (start) ---------
+05/20/2012: ----- version 0.1.0 (start) ---------
 - rename all the files to simplify the hierarchy,
   which implies a major version bump:-~,
 

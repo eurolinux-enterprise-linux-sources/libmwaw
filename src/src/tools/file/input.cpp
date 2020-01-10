@@ -30,7 +30,6 @@
 #include <string.h>
 #include <iostream>
 
-#include <libmwaw_internal.hxx>
 #include "file_internal.h"
 #include "input.h"
 
@@ -51,14 +50,14 @@ unsigned short InputStream::readU16()
   unsigned long nRead;
   unsigned char const *data = read(2, nRead);
   if (!data || nRead != 2) return 0;
-  return (unsigned short) ((data[0]<<8)+data[1]);
+  return (unsigned short)((data[0]<<8)+data[1]);
 }
 unsigned int InputStream::readU32()
 {
   unsigned long nRead;
   unsigned char const *data = read(4, nRead);
   if (!data || nRead != 4) return 0;
-  return (unsigned int)  ((data[0]<<24)+(data[1]<<16)+(data[2]<<8)+data[3]);
+  return (unsigned int)((data[0]<<24)+(data[1]<<16)+(data[2]<<8)+data[3]);
 }
 char InputStream::read8()
 {
@@ -72,14 +71,14 @@ short InputStream::read16()
   unsigned long nRead;
   unsigned char const *data = read(2, nRead);
   if (!data || nRead != 2) return 0;
-  return (short) ((data[0]<<8)+data[1]);
+  return (short)((data[0]<<8)+data[1]);
 }
 int InputStream::read32()
 {
   unsigned long nRead;
   unsigned char const *data = read(4, nRead);
   if (!data || nRead != 4) return 0;
-  return (int)  ((data[0]<<24)+(data[1]<<16)+(data[2]<<8)+data[3]);
+  return (int)((data[0]<<24)+(data[1]<<16)+(data[2]<<8)+data[3]);
 }
 
 int InputStream::seek(long _offset, SeekType seekType)
@@ -124,7 +123,7 @@ const unsigned char *StringStream::read(unsigned long numBytes, unsigned long &n
   if (((unsigned long)m_offset+numBytes) < m_buffer.size())
     numBytesToRead = numBytes;
   else
-    numBytesToRead = (unsigned long) ((long)m_buffer.size() - m_offset);
+    numBytesToRead = (unsigned long)((long)m_buffer.size() - m_offset);
 
   numBytesRead = numBytesToRead; // about as paranoid as we can be..
 
@@ -181,7 +180,11 @@ unsigned char const *FileStream::read(unsigned long numBytes, unsigned long &num
 #if 0
     MWAW_DEBUG_MSG(("FileStream::read called with %ld[%ld]: read %ld bytes\n", m_offset, numBytes, numToRead));
 #endif
-    fseek(m_file, m_offset, SEEK_SET);
+    if (fseek(m_file, m_offset, SEEK_SET)==-1) {
+      MWAW_DEBUG_MSG(("FileStream::read get error when doing a seek\n"));
+      m_buffer.clear();
+      return 0;
+    }
     size_t nRead = fread(&(m_buffer[0]), 1, numToRead, m_file);
     if (nRead != numToRead) {
       MWAW_DEBUG_MSG(("FileStream::read get error when reading data\n"));
@@ -192,7 +195,7 @@ unsigned char const *FileStream::read(unsigned long numBytes, unsigned long &num
   bufSize = long(m_buffer.size());
   if (!bufSize)
     return 0;
-  numBytesRead = (unsigned long) (m_bufferPos + bufSize - m_offset);
+  numBytesRead = (unsigned long)(m_bufferPos + bufSize - m_offset);
   if (numBytesRead > numBytes)
     numBytesRead = numBytes;
   unsigned char const *res = &(m_buffer[size_t(m_offset-m_bufferPos)]);
@@ -203,7 +206,10 @@ unsigned char const *FileStream::read(unsigned long numBytes, unsigned long &num
 long FileStream::length()
 {
   if (!m_isOk || !m_file) return 0;
-  fseek(m_file, 0, SEEK_END);
+  if (fseek(m_file, 0, SEEK_END)==-1) {
+    MWAW_DEBUG_MSG(("FileStream::length get error when reading data\n"));
+    return 0;
+  }
   return long(ftell(m_file));
 }
 }

@@ -38,30 +38,30 @@
 #include <iostream>
 #include <vector>
 
-#include <libwpd/libwpd.h>
+#include <librevenge/librevenge.h>
 
 #include "libmwaw_internal.hxx"
 #include "MWAWList.hxx"
 
-class WPXPropertyList;
-class WPXPropertyListVector;
-
 /** class to store a tab use by MWAWParagraph */
 struct MWAWTabStop {
-  //! the tab alignement
+  //! the tab alignment
   enum Alignment { LEFT, RIGHT, CENTER, DECIMAL, BAR };
   //! constructor
   MWAWTabStop(double position = 0.0, Alignment alignment = LEFT, uint16_t leaderCharacter='\0', uint16_t decimalCharacter = '.')  :
-    m_position(position), m_alignment(alignment), m_leaderCharacter(leaderCharacter), m_decimalCharacter(decimalCharacter) {
+    m_position(position), m_alignment(alignment), m_leaderCharacter(leaderCharacter), m_decimalCharacter(decimalCharacter)
+  {
   }
   //! add a tab to the propList
-  void addTo(WPXPropertyListVector &propList, double decalX=0.0) const;
+  void addTo(librevenge::RVNGPropertyListVector &propList, double decalX=0.0) const;
   //! operator==
-  bool operator==(MWAWTabStop const &tabs) const {
+  bool operator==(MWAWTabStop const &tabs) const
+  {
     return cmp(tabs)==0;
   }
   //! operator!=
-  bool operator!=(MWAWTabStop const &tabs) const {
+  bool operator!=(MWAWTabStop const &tabs) const
+  {
     return cmp(tabs)!=0;
   }
   //! operator <<
@@ -70,7 +70,7 @@ struct MWAWTabStop {
   int cmp(MWAWTabStop const &tabs) const;
   //! the tab position
   double m_position;
-  //! the alignement ( left, center, ...)
+  //! the alignment ( left, center, ...)
   Alignment m_alignment;
   //! the leader char
   uint16_t m_leaderCharacter;
@@ -96,11 +96,13 @@ public:
   //! destructor
   virtual ~MWAWParagraph();
   //! operator==
-  bool operator==(MWAWParagraph const &p) const {
+  bool operator==(MWAWParagraph const &p) const
+  {
     return cmp(p)==0;
   }
   //! operator!=
-  bool operator!=(MWAWParagraph const &p) const {
+  bool operator!=(MWAWParagraph const &p) const
+  {
     return cmp(p)!=0;
   }
   //! a comparison function
@@ -112,21 +114,21 @@ public:
   //! check if the paragraph has different borders
   bool hasDifferentBorders() const;
   //! a function used to resize the borders list ( adding empty borders if needed )
-  void resizeBorders(size_t newSize) {
+  void resizeBorders(size_t newSize)
+  {
     MWAWBorder empty;
     empty.m_style=MWAWBorder::None;
     m_borders.resize(newSize, empty);
   }
   //! set the interline
-  void setInterline(double value, WPXUnit unit, LineSpacingType type=Fixed) {
+  void setInterline(double value, librevenge::RVNGUnit unit, LineSpacingType type=Fixed)
+  {
     m_spacings[0]=value;
     m_spacingsInterlineUnit=unit;
     m_spacingsInterlineType=type;
   }
   //! add to the propList
-  void addTo(WPXPropertyList &propList, bool inTable) const;
-  //! add tabs to the propList
-  void addTabsTo(WPXPropertyListVector &propList, double decalX=0.0) const;
+  void addTo(librevenge::RVNGPropertyList &propList, bool inTable) const;
 
   //! insert the set values of para in the actual paragraph
   void insert(MWAWParagraph const &para);
@@ -138,44 +140,46 @@ public:
    * - 0: first line left margin
    * - 1: left margin
    * - 2: right margin*/
-  Variable<double> m_margins[3]; // 0: first line left, 1: left, 2: right
+  MWAWVariable<double> m_margins[3]; // 0: first line left, 1: left, 2: right
   /** the margins INCH, ... */
-  Variable<WPXUnit> m_marginsUnit;
+  MWAWVariable<librevenge::RVNGUnit> m_marginsUnit;
   /** the line spacing
    *
    * - 0: interline
    * - 1: before
    * - 2: after */
-  Variable<double> m_spacings[3]; // 0: interline, 1: before, 2: after
+  MWAWVariable<double> m_spacings[3]; // 0: interline, 1: before, 2: after
   /** the interline unit PERCENT or INCH, ... */
-  Variable<WPXUnit> m_spacingsInterlineUnit;
+  MWAWVariable<librevenge::RVNGUnit> m_spacingsInterlineUnit;
   /** the interline type: fixed, atLeast, ... */
-  Variable<LineSpacingType> m_spacingsInterlineType;
+  MWAWVariable<LineSpacingType> m_spacingsInterlineType;
   //! the tabulations
-  Variable<std::vector<MWAWTabStop> > m_tabs;
+  MWAWVariable<std::vector<MWAWTabStop> > m_tabs;
   //! true if the tabs are relative to left margin, false if there are relative to the page margin (default)
-  Variable<bool> m_tabsRelativeToLeftMargin;
+  MWAWVariable<bool> m_tabsRelativeToLeftMargin;
 
   /** the justification */
-  Variable<Justification> m_justify;
+  MWAWVariable<Justification> m_justify;
   /** a list of bits: 0x1 (unbreakable), 0x2 (do not break after) */
-  Variable<int> m_breakStatus; // BITS: 1: unbreakable, 2: dont break after
+  MWAWVariable<int> m_breakStatus; // BITS: 1: unbreakable, 2: dont break after
 
   /** the actual level index */
-  Variable<int> m_listLevelIndex;
+  MWAWVariable<int> m_listLevelIndex;
   /** the list id (if know ) */
-  Variable<int> m_listId;
+  MWAWVariable<int> m_listId;
   /** the list start value (if set ) */
-  Variable<int> m_listStartValue;
+  MWAWVariable<int> m_listStartValue;
   /** the actual level */
-  Variable<MWAWListLevel> m_listLevel;
+  MWAWVariable<MWAWListLevel> m_listLevel;
 
   //! the background color
-  Variable<MWAWColor> m_backgroundColor;
+  MWAWVariable<MWAWColor> m_backgroundColor;
 
   //! list of border ( order MWAWBorder::Pos)
-  std::vector<Variable<MWAWBorder> > m_borders;
+  std::vector<MWAWVariable<MWAWBorder> > m_borders;
 
+  //! the style name
+  std::string m_styleName;
   //! a string to store some errors
   std::string m_extra;
 };

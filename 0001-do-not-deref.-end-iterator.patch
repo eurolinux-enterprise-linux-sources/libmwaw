@@ -1,0 +1,25 @@
+From e2758011b89f33e055ef8055c3b1c571c68abad8 Mon Sep 17 00:00:00 2001
+From: David Tardon <dtardon@redhat.com>
+Date: Tue, 5 May 2015 13:21:34 +0200
+Subject: [PATCH] do not deref. end iterator
+
+---
+ src/lib/RagTimeText.cxx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/lib/RagTimeText.cxx b/src/lib/RagTimeText.cxx
+index dae1507..e24bcd0 100644
+--- a/src/lib/RagTimeText.cxx
++++ b/src/lib/RagTimeText.cxx
+@@ -304,7 +304,7 @@ bool RagTimeText::readFontNames(MWAWEntry &entry)
+     }
+     input->seek(pos, librevenge::RVNG_SEEK_SET);
+     std::string name("");
+-    long nextPos=*pIt;
++    long nextPos=(pIt==posSet.end()) ? endPos : *pIt;
+     while (!input->isEnd() && input->tell()<nextPos) {
+       char c=(char) input->readULong(1);
+       if (c=='\0') break;
+-- 
+2.3.5
+

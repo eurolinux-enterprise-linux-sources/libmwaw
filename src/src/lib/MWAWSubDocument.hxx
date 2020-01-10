@@ -31,8 +31,8 @@
 * instead of those above.
 */
 
-#ifndef MWAW_SUBDOCUMENT_HXX
-#define MWAW_SUBDOCUMENT_HXX
+#ifndef MWAW_SUB_DOCUMENT_HXX
+#define MWAW_SUB_DOCUMENT_HXX
 
 #include "libmwaw_internal.hxx"
 #include "MWAWEntry.hxx"
@@ -53,24 +53,22 @@ public:
   //! comparison operator!=
   virtual bool operator!=(MWAWSubDocument const &doc) const;
   //! comparison operator==
-  bool operator==(MWAWSubDocument const &doc) const {
+  bool operator==(MWAWSubDocument const &doc) const
+  {
     return !operator!=(doc);
   }
   //! comparison operator!=
   bool operator!=(shared_ptr<MWAWSubDocument> const &doc) const;
   //! comparison operator==
-  bool operator==(shared_ptr<MWAWSubDocument> const &doc) const {
+  bool operator==(shared_ptr<MWAWSubDocument> const &doc) const
+  {
     return !operator!=(doc);
   }
 
   /** virtual parse function
    *
    * this function is called to parse the subdocument */
-  virtual void parse(MWAWContentListenerPtr &listener, libmwaw::SubDocumentType subDocumentType) = 0;
-  /** virtual parse function
-   *
-   * this function is called to parse a graphic subdocument */
-  virtual void parseGraphic(MWAWGraphicListenerPtr &listener, libmwaw::SubDocumentType subDocumentType);
+  virtual void parse(MWAWListenerPtr &listener, libmwaw::SubDocumentType subDocumentType) = 0;
 
 protected:
   //! the main zone parser

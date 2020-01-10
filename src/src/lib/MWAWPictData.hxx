@@ -32,7 +32,7 @@
 */
 
 /* This header contains code specific to a pict which can be stored in a
- *      WPXBinaryData, this includes :
+ *      librevenge::RVNGBinaryData, this includes :
  *         - the mac Pict format (in MWAWPictMac)
  *         - some old data names db3
  *         - some potential short data file
@@ -44,12 +44,10 @@
 #  include <assert.h>
 #  include <ostream>
 
-#  include <libwpd/libwpd.h>
+#  include <librevenge/librevenge.h>
 
 #  include "libmwaw_internal.hxx"
 #  include "MWAWPict.hxx"
-
-class WPXBinaryData;
 
 /** \brief an abstract class which defines basic formated picture ( Apple© Pict, DB3, ...) */
 class MWAWPictData : public MWAWPict
@@ -58,14 +56,16 @@ public:
   //! the picture subtype
   enum SubType { PictMac, DB3, Unknown };
   //! returns the picture type
-  virtual Type getType() const {
+  virtual Type getType() const
+  {
     return MWAWPict::PictData;
   }
   //! returns the picture subtype
   virtual SubType getSubType() const = 0;
 
-  //! returns the final WPXBinary data
-  virtual bool getBinary(WPXBinaryData &res, std::string &s) const {
+  //! returns the final librevenge::RVNGBinary data
+  virtual bool getBinary(librevenge::RVNGBinaryData &res, std::string &s) const
+  {
     if (!valid() || isEmpty()) return false;
 
     s = "image/pict";
@@ -74,37 +74,42 @@ public:
   }
 
   //! returns true if we are relatively sure that the data are correct
-  virtual bool sure() const {
+  virtual bool sure() const
+  {
     return getSubType() != Unknown;
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return false;
   }
 
   //! returns true if the picture is valid and has size 0 or contains no data
-  bool isEmpty() const {
+  bool isEmpty() const
+  {
     return m_empty;
   }
 
   /** checks if the data pointed by input is known
      - if not return MWAW_R_BAD
      - if true
-     - fills box if possible, if not set box=Box2f() */
-  static ReadResult check(MWAWInputStreamPtr input, int size, Box2f &box) {
+     - fills box if possible, if not set box=MWAWBox2f() */
+  static ReadResult check(MWAWInputStreamPtr input, int size, MWAWBox2f &box)
+  {
     return checkOrGet(input, size, box, 0L);
   }
 
   /** checks if the data pointed by input is known
    * - if not or if the pict is empty, returns 0L
    * - if not returns a container of picture */
-  static MWAWPictData *get(MWAWInputStreamPtr input, int size) {
+  static MWAWPictData *get(MWAWInputStreamPtr input, int size)
+  {
     MWAWPictData *res = 0L;
-    Box2f box;
+    MWAWBox2f box;
     if (checkOrGet(input, size, box, &res) == MWAW_R_BAD) return 0L;
     if (res) { // if the bdbox is good, we set it
-      Vec2f sz = box.size();
+      MWAWVec2f sz = box.size();
       if (sz.x()>0 && sz.y()>0) res->setBdBox(box);
     }
     return res;
@@ -112,13 +117,16 @@ public:
 
   /** a virtual function used to obtain a strict order,
    * must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     int diff = MWAWPict::cmp(a);
     if (diff) return diff;
     MWAWPictData const &aPict = static_cast<MWAWPictData const &>(a);
 
     diff = (int) m_empty - (int) aPict.m_empty;
     if (diff) return (diff < 0) ? -1 : 1;
+    else if (m_empty) // both empty
+      return 0;
     // the type
     diff = getSubType() - aPict.getSubType();
     if (diff) return (diff < 0) ? -1 : 1;
@@ -129,6 +137,7 @@ public:
       return -1;
     unsigned char const *data=m_data.getDataBuffer();
     unsigned char const *aData=m_data.getDataBuffer();
+    if (!data || !aData) return 0; // must only appear if the two buffers are empty
     for (unsigned long c=0; c < m_data.size(); c++, data++, aData++) {
       if (*data < *aData) return -1;
       if (*data > *aData) return 1;
@@ -139,11 +148,11 @@ public:
 protected:
   /** a file pict can be created from the data pict by adding a header with size 512,
    * this function do this conversion needed to return the final picture */
-  static bool createFileData(WPXBinaryData const &orig, WPXBinaryData &result);
+  static bool createFileData(librevenge::RVNGBinaryData const &orig, librevenge::RVNGBinaryData &result);
 
   //! protected constructor: use check to construct a picture
   MWAWPictData(): m_data(), m_empty(false) { }
-  MWAWPictData(Box2f &): m_data(), m_empty(false) { }
+  MWAWPictData(MWAWBox2f &): m_data(), m_empty(false) { }
 
   /** \brief checks if the data pointed by input and of given size is a pict
    * - if not returns MWAW_R_BAD
@@ -151,10 +160,10 @@ protected:
    *    - fills the box size
    *    - creates a picture if result is given and if the picture is not empty */
   static ReadResult checkOrGet(MWAWInputStreamPtr input, int size,
-                               Box2f &box, MWAWPictData **result = 0L);
+                               MWAWBox2f &box, MWAWPictData **result = 0L);
 
   //! the data size (without the empty header of 512 characters)
-  WPXBinaryData m_data;
+  librevenge::RVNGBinaryData m_data;
 
   //! some picture can be valid but empty
   bool m_empty;
@@ -165,25 +174,29 @@ class MWAWPictDB3 : public MWAWPictData
 {
 public:
   //! returns the picture subtype
-  virtual SubType getSubType() const {
+  virtual SubType getSubType() const
+  {
     return DB3;
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return m_data.size() != 0;
   }
 
   /** a virtual function used to obtain a strict order,
   must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     return MWAWPictData::cmp(a);
   }
 
 protected:
 
   //! protected constructor: uses check to construct a picture
-  MWAWPictDB3() {
+  MWAWPictDB3()
+  {
     m_empty = false;
   }
 
@@ -201,25 +214,29 @@ class MWAWPictDUnknown : public MWAWPictData
 {
 public:
   //! returns the picture subtype
-  virtual SubType getSubType() const {
+  virtual SubType getSubType() const
+  {
     return Unknown;
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return m_data.size() != 0;
   }
 
   /** a virtual function used to obtain a strict order,
    * must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     return MWAWPictData::cmp(a);
   }
 
 protected:
 
   //! protected constructor: uses check to construct a picture
-  MWAWPictDUnknown() {
+  MWAWPictDUnknown()
+  {
     m_empty = false;
   }
 

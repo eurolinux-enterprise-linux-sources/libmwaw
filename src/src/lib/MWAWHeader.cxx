@@ -31,6 +31,10 @@
 * instead of those above.
 */
 
+/** \file MWAWHeader.cxx
+ * Implements MWAWHeader (document's type, version, kind)
+ */
+
 #include <string.h>
 #include <iostream>
 
@@ -69,11 +73,13 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
       if (type=="OTLN") { // at least basic v2
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_ACTA, 1));
         return res;
-      } else if (type=="otln") { // classic version
+      }
+      else if (type=="otln") {   // classic version
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_ACTA, 2));
         return res;
       }
-    } else if (creator=="BOBO") {
+    }
+    else if (creator=="BOBO") {
       if (type=="CWDB" || type=="CWD2" || type=="sWDB") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, 1, MWAWDocument::MWAW_K_DATABASE));
         return res;
@@ -86,30 +92,66 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, 1, MWAWDocument::MWAW_K_SPREADSHEET));
         return res;
       }
-      if (type=="CWWP" || type=="CWW2" || type=="sWPP") {
-        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, 1));
-        return res;
-      }
       if (type=="CWPR") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, 1, MWAWDocument::MWAW_K_PRESENTATION));
         return res;
       }
-    } else if (creator=="BWks") {
+      if (type=="CWPT") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, 1, MWAWDocument::MWAW_K_PAINT));
+        return res;
+      }
+      if (type=="CWWP" || type=="CWW2" || type=="sWPP") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, 1, MWAWDocument::MWAW_K_TEXT));
+        return res;
+      }
+    }
+    else if (creator=="BWks") {
       if (type=="BWwp") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1));
         return res;
       }
-    } else if (creator=="Dk@P") {
+      if (type=="BWdb") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_DATABASE));
+        return res;
+      }
+      if (type=="BWdr") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+      if (type=="BWpt") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_PAINT));
+        return res;
+      }
+      if (type=="BWss") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+        return res;
+      }
+    }
+    else if (creator=="CDrw") { // CHANGEME: ClarisDraw
+      if (type=="dDrw" || type=="dDst" || type=="iLib") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RESERVED1, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+    else if (creator=="C#+A") { // solo
+      if (type=="C#+D" || type=="C#+F") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RAGTIME, 5));
+        return res;
+      }
+    }
+    else if (creator=="Dc@P" || creator=="Dk@P") {
       if (type=="APPL") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_DOCMAKER, 1));
         return res;
       }
-    } else if (creator=="FS03") {
+    }
+    else if (creator=="FS03") {
       if (type=="WRT+") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WRITERPLUS, 1));
         return res;
       }
-    } else if (creator=="FWRT") {
+    }
+    else if (creator=="FWRT") {
       if (type=="FWRM") { // 1.7 ?
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_FULLWRITE, 1));
         return res;
@@ -122,52 +164,104 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_FULLWRITE,2));
         return res;
       }
-    } else if (creator=="HMiw") { // japonese
+    }
+    else if (creator=="F#+A") { // Classic
+      if (type=="F#+D" || type=="F#+F") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RAGTIME, 3));
+        return res;
+      }
+    }
+    else if (creator=="HMiw") {   // japonese
       if (type=="IWDC") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_HANMACWORDJ,1));
         return res;
       }
-    } else if (creator=="HMdr") { // korean
+    }
+    else if (creator=="HMdr") {   // korean
       if (type=="DRD2") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_HANMACWORDK,1));
         return res;
       }
-    } else if (creator=="LWTE") {
+    }
+    else if (creator=="LWTE") {
       if (type=="TEXT" || type=="ttro") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_LIGHTWAYTEXT,1));
         return res;
       }
-    } else if (creator=="LWTR") {
+    }
+    else if (creator=="LWTR") {
       if (type=="APPL") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_LIGHTWAYTEXT,1));
         return res;
       }
-    } else if (creator=="MACA") {
+    }
+    else if (creator=="MACA") {
       if (type=="WORD") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACWRITE, 1));
         return res;
       }
-    } else if (creator=="MDsr") {
+    }
+    else if (creator=="MACD") { // v1.0
+      if (type=="DRWG") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAFT, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+#ifdef DEBUG
+    else if (creator=="MD40") {
+      if (type=="MDDC") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAFT, 5, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+#endif
+    else if (creator=="MDFT") { // v1.2
+      if (type=="DRWG") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAFT, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+    else if (creator=="MDPL") { // MacDraw II
+      if (type=="DRWG") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 0, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+      if (type=="STAT") { // stationery
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 0, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+    else if (creator=="MDRW") {
+      if (type=="DRWG") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAW, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+    else if (creator=="MDsr") {
       if (type=="APPL") { // auto content
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDOC, 1));
         return res;
       }
-    } else if (creator=="MDvr") {
+    }
+    else if (creator=="MDvr") {
       if (type=="MDdc") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDOC, 1));
         return res;
       }
-    } else if (creator=="MMBB") {
+    }
+    else if (creator=="MMBB") {
       if (type=="MBBT") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MARINERWRITE, 1));
         return res;
       }
-    } else if (creator=="MORE") {
+    }
+    else if (creator=="MORE") {
       if (type=="MORE") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MORE, 1));
         return res;
       }
-    } else if (creator=="MOR2") {
+    }
+    else if (creator=="MOR2") {
       if (type=="MOR2") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MORE, 2));
         return res;
@@ -176,40 +270,54 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MORE, 3));
         return res;
       }
-    } else if (creator=="MWII") { // MacWriteII
-      if (type=="MW2D") {
-        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACWRITEPRO, 0));
+    }
+    else if (creator=="MPNT") {
+      if (type=="PNTG") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACPAINT, 1, MWAWDocument::MWAW_K_PAINT));
         return res;
       }
-    } else if (creator=="MWPR") {
-      if (type=="MWPd") {
-        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACWRITEPRO, 1));
-        return res;
-      }
-    } else if (creator=="MSWD") {
-      if (type=="WDBN") {
+    }
+    else if (creator=="MSWD") {
+      if (type=="WDBN" || type=="GLOS") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORD, 3));
         return res;
       }
-      if (type=="GLOS") {
-        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORD, 3));
-        return res;
-      }
-    } else if (creator=="WORD") {
-      if (type=="WDBN") {
-        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORD, 1));
-        return res;
-      }
-    } else if (creator=="MSWK") {
+    }
+    else if (creator=="MSWK") {
       if (type=="AWWP") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 3));
         return res;
       }
-      if (type=="RLRB" || type=="sWRB") {
-        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 104));
+      if (type=="AWDB") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 3, MWAWDocument::MWAW_K_DATABASE));
         return res;
       }
-    } else if (creator=="NISI") {
+      if (type=="AWDR") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 3, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+      if (type=="AWSS") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 2, MWAWDocument::MWAW_K_SPREADSHEET));
+        return res;
+      }
+      if (type=="RLRB" || type=="sWRB") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 4));
+        return res;
+      }
+    }
+    else if (creator=="MWII") {   // MacWriteII
+      if (type=="MW2D") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACWRITEPRO, 0));
+        return res;
+      }
+    }
+    else if (creator=="MWPR") {
+      if (type=="MWPd") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACWRITEPRO, 1));
+        return res;
+      }
+    }
+    else if (creator=="NISI") {
       if (type=="TEXT") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_NISUSWRITER, 1));
         return res;
@@ -219,27 +327,76 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
         return res;
       }
       // "edtt": empty file, probably created when the file is edited
-    } else if (creator=="PSIP") {
+    }
+    else if (creator=="PSIP") {
       if (type=="AWWP") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 1));
         return res;
       }
-    } else if (creator=="PSI2") {
+    }
+    else if (creator=="PSI2") {
       if (type=="AWWP") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 2));
         return res;
       }
-    } else if (creator=="PWRI") {
+      if (type=="AWDB") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 2, MWAWDocument::MWAW_K_DATABASE));
+        return res;
+      }
+      if (type=="AWSS") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 2, MWAWDocument::MWAW_K_SPREADSHEET));
+        return res;
+      }
+    }
+    else if (creator=="PWRI") {
       if (type=="OUTL") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MINDWRITE, 2));
         return res;
       }
-    } else if (creator=="TBB5") {
+    }
+    else if (creator=="Rslv") {
+      if (type=="RsWs") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISRESOLVE, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+        return res;
+      }
+    }
+    else if (creator=="R#+A") {
+      if (type=="R#+D" || type=="R#+F") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RAGTIME, 3));
+        return res;
+      }
+    }
+    else if (creator=="SPNT") {
+      if (type=="SPTG") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_SUPERPAINT, 1, MWAWDocument::MWAW_K_PAINT));
+        return res;
+      }
+      if (type=="PNTG") {
+        // same as MacPaint format, so use the MacPaint parser
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACPAINT, 1, MWAWDocument::MWAW_K_PAINT));
+        return res;
+      }
+      // other type seems to correspond to basic picture file, so we do not accept them
+    }
+    else if (creator=="TBB5") {
       if (type=="TEXT" || type=="ttro") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_TEXEDIT, 1));
         return res;
       }
-    } else if (creator=="ZEBR") {
+    }
+    else if (creator=="WNGZ") {
+      if (type=="WZSS") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WINGZ, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+        return res;
+      }
+    }
+    else if (creator=="WORD") {
+      if (type=="WDBN") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORD, 1));
+        return res;
+      }
+    }
+    else if (creator=="ZEBR") {
       if (type=="ZWRT") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, 1));
         return res;
@@ -248,23 +405,56 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, 1, MWAWDocument::MWAW_K_DRAW));
         return res;
       }
+      if (type=="PNTG") {
+        // same as MacPaint format, so use the MacPaint parser
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACPAINT, 1, MWAWDocument::MWAW_K_PAINT));
+        return res;
+      }
+      if (type=="ZPNT") {
+        /* the ZPNT(v2) are basic pct files with some resources, but
+           we treat them to be complete */
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, 2, MWAWDocument::MWAW_K_PAINT));
+        return res;
+      }
+      if (type=="ZCAL") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+        return res;
+      }
+      if (type=="ZDBS") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, 1, MWAWDocument::MWAW_K_DATABASE));
+        return res;
+      }
       // can we treat also ZOLN ?
-    } else if (creator=="ZWRT") {
+    }
+    else if (creator=="ZWRT") {
       if (type=="Zart") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_ZWRITE, 1));
         return res;
       }
-    } else if (creator=="eDcR") {
+    }
+    else if (creator=="dPro") {
+      if (type=="dDoc") {
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+      if (type=="dLib") { // macdraw pro slide/library
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 1, MWAWDocument::MWAW_K_DRAW));
+        return res;
+      }
+    }
+    else if (creator=="eDcR") {
       if (type=="eDoc") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_EDOC, 1));
         return res;
       }
-    } else if (creator=="eSRD") { // self reading application
+    }
+    else if (creator=="eSRD") {   // self reading application
       if (type=="APPL") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_EDOC, 1));
         return res;
       }
-    } else if (creator=="nX^n") {
+    }
+    else if (creator=="nX^n") {
       if (type=="nX^d") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WRITENOW, 2));
         return res;
@@ -273,7 +463,8 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WRITENOW, 3));
         return res;
       }
-    } else if (creator=="ttxt") {
+    }
+    else if (creator=="ttxt") {
       if (type=="TEXT" || type=="ttro") {
         res.push_back(MWAWHeader(MWAWDocument::MWAW_T_TEACHTEXT, 1));
         return res;
@@ -288,19 +479,46 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
   if (!input->hasDataFork() || input->size() < 8)
     return res;
 
-  input->seek(0, WPX_SEEK_SET);
-  int val[4];
-  for (int i = 0; i < 4; i++)
+  input->seek(0, librevenge::RVNG_SEEK_SET);
+  int val[5];
+  for (int i = 0; i < 5; i++)
     val[i] = int(input->readULong(2));
 
   // ----------- clearly discriminant ------------------
-  if (val[2] == 0x424F && val[3] == 0x424F && (val[0]>>8) < 8) {
-    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Claris Works file[Limited parsing]\n"));
-    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, (val[0]) >> 8));
-    return res;
+  if (val[2] == 0x424F && val[3] == 0x424F && (val[0]>>8) < 7) {
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Claris Works file\n"));
+    int vers= (val[0] >> 8);
+    static int const(typePos[7])= {0, 242, 248, 248, 256, 268, 278};
+    int typeFile=-1;
+    if (vers >= 1 && vers <= 6 && input->checkPosition(typePos[vers])) {
+      input->seek(typePos[vers], librevenge::RVNG_SEEK_SET);
+      typeFile=int(input->readLong(1));
+    }
+    switch (typeFile) {
+    case 0:
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, vers, MWAWDocument::MWAW_K_DRAW));
+      return res;
+    case 1:
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, vers, MWAWDocument::MWAW_K_TEXT));
+      return res;
+    case 2:
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, vers, MWAWDocument::MWAW_K_SPREADSHEET));
+      return res;
+    case 3:
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, vers, MWAWDocument::MWAW_K_DATABASE));
+      return res;
+    case 4:
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, vers, MWAWDocument::MWAW_K_PAINT));
+      return res;
+    case 5:
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISWORKS, vers, MWAWDocument::MWAW_K_PRESENTATION));
+      return res;
+    default:
+      break;
+    }
   }
   if (val[0]==0x5772 && val[1]==0x6974 && val[2]==0x654e && val[3]==0x6f77) {
-    input->seek(8, WPX_SEEK_SET);
+    input->seek(8, librevenge::RVNG_SEEK_SET);
     int version = int(input->readLong(2));
 
 #ifdef DEBUG
@@ -318,14 +536,86 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
       return res;
     }
   }
+  if (val[0]==0x574e && val[1]==0x475a && val[2]==0x575a && val[3]==0x5353) {
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Wingz file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WINGZ, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+    return res;
+  }
+  if (val[0]==0x4241 && val[1]==0x545F && val[2]==0x4254 && val[3]==0x5353) {
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a ClarisResolve file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_CLARISRESOLVE, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+    return res;
+  }
+  if (val[0]==0x4323 && val[1]==0x2b44 && val[2]==0xa443 && val[3]==0x4da5) {
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a RagTime 5-6 file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RAGTIME, 5));
+    return res;
+  }
   if (val[0]==0x4646 && val[1]==0x4646 && val[2]==0x3030 && val[3]==0x3030) {
     MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Mariner Write file\n"));
     res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MARINERWRITE, 1));
     return res;
   }
-  if (val[0]==0x4257 && val[1]==0x6b73 && val[2]==0x4257 && val[3]==0x7770) {
-    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a BeagleWorks file\n"));
-    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1));
+  if (val[0]==0x4257 && val[1]==0x6b73 && val[2]==0x4257) {
+    if (val[3]==0x7770) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a BeagleWorks file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1));
+      return res;
+    }
+    if (val[3]==0x6462) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a BeagleWorks Database file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_DATABASE));
+      return res;
+    }
+    if (val[3]==0x6472) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a BeagleWorks Draw file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_DRAW));
+      return res;
+    }
+    if (val[3]==0x7074) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a BeagleWorks Paint file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_PAINT));
+      return res;
+    }
+    if (val[3]==0x7373) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a BeagleWorks Spreadsheet file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_BEAGLEWORKS, 1, MWAWDocument::MWAW_K_SPREADSHEET));
+      return res;
+    }
+  }
+  if (val[0]==0x4452 && val[1]==0x5747) { // DRWG
+    if (val[2]==0x4d44) { // MD
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacDraw file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAW, 1, MWAWDocument::MWAW_K_DRAW));
+      return res;
+    }
+    if (val[2]==0 || val[2]==0x4432) { // D2
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacDraw II file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 0, MWAWDocument::MWAW_K_DRAW));
+      return res;
+    }
+  }
+  if (val[0]==0x5354 && val[1]==0x4154 && (val[2]==0 || val[2]==0x4432)) {
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacDraw II template file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 0, MWAWDocument::MWAW_K_DRAW));
+    return res;
+  }
+#ifdef DEBUG
+  // we need the resource fork to find the colors, patterns, ... ; so not active in normal mode
+  if (val[0]==0x6444 && val[1]==0x6f63 && val[2]==0x4432) { // dDocD2
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacDraw Pro file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 1, MWAWDocument::MWAW_K_DRAW));
+    return res;
+  }
+  if (val[0]==0x644c && val[1]==0x6962 && val[2]==0x4432) { // dLibD2
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacDraw Pro template file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAWPRO, 1, MWAWDocument::MWAW_K_DRAW));
+    return res;
+  }
+#endif
+  if (val[0]==2 && val[1]==0 && val[2]==2 && val[3]==0x262 && val[4]==0x262) {
+    MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacDraft file\n"));
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAFT, 1, MWAWDocument::MWAW_K_DRAW));
     return res;
   }
   if (val[0]==0x4859 && val[1]==0x4c53 && val[2]==0x0210) {
@@ -346,6 +636,10 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
     res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MORE, 3));
     return res;
   }
+  if ((val[0]==0x100||val[0]==0x200) && val[2]==0x4558 && val[3]==0x5057) { // CHANGEME: ClarisDraw
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RESERVED1, 1, MWAWDocument::MWAW_K_DRAW));
+    return res;
+  }
 
   if (val[0]==0x100 || val[0]==0x200) {
     if (val[1]==0x5a57 && val[2]==0x5254) {
@@ -356,11 +650,39 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
       res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, val[0]==0x100 ? 1 : 2, MWAWDocument::MWAW_K_DRAW));
       return res;
     }
+    if (val[1]==0x5a43 && val[2]==0x414C) {
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, val[0]==0x100 ? 1 : 2, MWAWDocument::MWAW_K_SPREADSHEET));
+      return res;
+    }
+    if (val[1]==0x5a44 && val[2]==0x4253) {
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_GREATWORKS, val[0]==0x100 ? 1 : 2, MWAWDocument::MWAW_K_DATABASE));
+      return res;
+    }
     // maybe we can also add outline: if (val[1]==0x5a4f && val[2]==0x4c4e)
   }
   // magic ole header
-  if (val[0]==0xd0cf && val[1]==0x11e0 && val[2]==0xa1b1 && val[3]==0x1ae1)
-    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 104));
+  if (val[0]==0xd0cf && val[1]==0x11e0 && val[2]==0xa1b1 && val[3]==0x1ae1 && input->isStructured()) {
+    MWAWInputStreamPtr mainOle = input->getSubStreamByName("MN0");
+    if (mainOle && mainOle->readULong(4) == 0x43484e4b)
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 4));
+    else if (mainOle && mainOle->size()>18) {
+      mainOle->seek(16, librevenge::RVNG_SEEK_SET);
+      int value=(int) mainOle->readULong(2);
+      switch (value) {
+      case 2:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 4, MWAWDocument::MWAW_K_DATABASE));
+        break;
+      case 3:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 4, MWAWDocument::MWAW_K_SPREADSHEET));
+        break;
+      case 12:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, 4, MWAWDocument::MWAW_K_DRAW));
+        break;
+      default:
+        break;
+      }
+    }
+  }
 
   if ((val[0]==0xfe32 && val[1]==0) || (val[0]==0xfe34 && val[1]==0) ||
       (val[0] == 0xfe37 && (val[1] == 0x23 || val[1] == 0x1c))) {
@@ -370,7 +692,8 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
       if (val[0]==0xfe34) {
         MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Word 3.0 file\n"));
         vers = 3;
-      } else if (val[0]==0xfe32) {
+      }
+      else if (val[0]==0xfe32) {
         MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Word 1.0 file\n"));
         vers = 1;
       }
@@ -389,7 +712,6 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
     if (vers >= 0)
       res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORD, vers));
   }
-
   // ----------- less discriminant ------------------
   if (val[0] == 0x2e && val[1] == 0x2e) {
     MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacWrite II file\n"));
@@ -403,18 +725,26 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
     MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MindWrite file 2.1\n"));
     res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MINDWRITE, 2));
   }
+
   // ----------- other ------------------
   if (val[0]==0 && val[1]==0 && val[2]==0 && val[3]==0) {
-    input->seek(8, WPX_SEEK_SET);
+    input->seek(8, librevenge::RVNG_SEEK_SET);
     int value=(int) input->readULong(1);
     if (value==0x4 || value==0x44) {
       MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a WriteNow 1.0 or 2.0 file\n"));
       res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WRITENOW, 2));
     }
   }
+  if (val[0]==0 && input->size() > 32) {
+    input->seek(16, librevenge::RVNG_SEEK_SET);
+    if (input->readLong(2)==0x688f && input->readLong(2)==0x688f) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a RagTime file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_RAGTIME));
+    }
+  }
   if (val[0]==0) {
     int vers = -1;
-    switch(val[1]) {
+    switch (val[1]) {
     case 4:
       vers = 1;
       break;
@@ -424,29 +754,100 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
     case 9:
       vers = 3;
       break;
-#ifdef DEBUG
-    case 11: // a msworks 4 file ( but not a text file)
+    case 11: // embedded data
       vers = 4;
       break;
-#endif
     default:
       break;
     }
-    if (vers > 0) {
-      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Microsoft Works %d.0 file\n", vers));
-      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, vers));
+    if (vers > 0 && input->size()>16) {
+      input->seek(16, librevenge::RVNG_SEEK_SET);
+      int value=(int) input->readULong(2);
+      switch (value) {
+      case 1:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, vers));
+        break;
+      case 2:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, vers, MWAWDocument::MWAW_K_DATABASE));
+        break;
+      case 3:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, vers, MWAWDocument::MWAW_K_SPREADSHEET));
+        break;
+      case 12:
+        res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MICROSOFTWORKS, vers, MWAWDocument::MWAW_K_DRAW));
+        break;
+      default:
+        break;
+      }
     }
   }
+  if (val[0]==0x4d44 && input->size()>=512) { // maybe a MacDraw 0 file, will be check later
+    res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACDRAW, 0, MWAWDocument::MWAW_K_DRAW));
+  }
   if (val[0] == 3 || val[0] == 6) {
-    // version will be print by MWParser::check
+    // version will be print by MacWrtParser::check
     res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACWRITE, val[0]));
   }
   if (val[0] == 0x110) {
     MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a Writerplus file\n"));
     res.push_back(MWAWHeader(MWAWDocument::MWAW_T_WRITERPLUS, 1));
   }
+  if (val[0] == 0x1000) {
+    input->seek(10, librevenge::RVNG_SEEK_SET);
+    int value=(int) input->readULong(2);
+    // 1: bitmap, 2: vectorized graphic
+    if (value==1)
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_SUPERPAINT, 1, MWAWDocument::MWAW_K_PAINT));
+    else if (value==2)
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_SUPERPAINT, 1, MWAWDocument::MWAW_K_DRAW));
+  }
+  //
+  // middle of file
+  //
+  if (input->size()>=512+720*2) {
+    // check for a MacPaint file
+    input->seek(512, librevenge::RVNG_SEEK_SET);
+    bool ok=true;
+    // check the first 3 row
+    for (int row=0; row<3; ++row) {
+      int lastColor=-1;
+      int col=0;
+      while (col<72) {
+        if (input->tell()+2>input->size()) {
+          ok=false;
+          break;
+        }
+        int wh=(int) input->readULong(1);
+        if (wh>=0x81) {
+          int color=(int) input->readULong(1);
+          // consider that repeat color is anormal...
+          if (col+(0x101-wh)>72 || (lastColor>=0 && color==lastColor)) {
+            ok=false;
+            break;
+          }
+          col+=(0x101-wh);
+          lastColor=color;
+          continue;
+        }
+        if (col+1+wh>72) {
+          ok=false;
+          break;
+        }
+        lastColor=-1;
+        col += wh+1;
+        input->seek(wh+1, librevenge::RVNG_SEEK_CUR);
+      }
+      if (!ok) break;
+    }
+    if (ok) {
+      MWAW_DEBUG_MSG(("MWAWHeader::constructHeader: find a MacPaint file\n"));
+      res.push_back(MWAWHeader(MWAWDocument::MWAW_T_MACPAINT, 1, MWAWDocument::MWAW_K_PAINT));
+    }
+  }
+  //
   //ok now look at the end of file
-  if (input->seek(-4, WPX_SEEK_END))
+  //
+  if (input->seek(-4, librevenge::RVNG_SEEK_END))
     return res;
   int lVal[2];
   for (int i = 0; i < 2; i++)
@@ -460,7 +861,7 @@ std::vector<MWAWHeader> MWAWHeader::constructHeader
   else if (lVal[0] == 0 && lVal[1]==1) // not probable, but
     res.push_back(MWAWHeader(MWAWDocument::MWAW_T_FULLWRITE, 1));
 
-  input->seek(0, WPX_SEEK_SET);
+  input->seek(0, librevenge::RVNG_SEEK_SET);
   return res;
 }
 // vim: set filetype=cpp tabstop=2 shiftwidth=2 cindent autoindent smartindent noexpandtab:

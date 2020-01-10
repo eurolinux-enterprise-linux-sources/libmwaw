@@ -37,8 +37,8 @@
  *   or http://www.mactech.com/articles/mactech/Vol.01/01.09/AllAboutPrinting/index.html
  */
 
-#ifndef MWAW_PRINT
-#  define MWAW_PRINT
+#ifndef MWAW_PRINTER
+#  define MWAW_PRINTER
 
 #  include <assert.h>
 #  include <ostream>
@@ -54,26 +54,29 @@ struct PrinterInfoData;
 //! the Apple© rectangle : Rect
 struct PrinterRect {
   //! returns the size
-  Vec2i size() const {
+  MWAWVec2i size() const
+  {
     return m_pos[1]-m_pos[0];
   }
   //! returns the position ( 0: leftTop, 1:rightBottom )
-  Vec2i pos(int i) const {
+  MWAWVec2i pos(int i) const
+  {
     return m_pos[i];
   }
 
   //! operator <<
-  friend std::ostream &operator<< (std::ostream &o, PrinterRect const &r) {
+  friend std::ostream &operator<< (std::ostream &o, PrinterRect const &r)
+  {
     o << "[" << r.m_pos[0] << " " << r.m_pos[1] << "]";
     return o;
   }
 
   //! read value in a file, knowing the resolution
-  bool read(MWAWInputStreamPtr input, Vec2i const &res);
+  bool read(MWAWInputStreamPtr input, MWAWVec2i const &res);
 
 protected:
   //! the LT and RB positions
-  Vec2i m_pos[2];
+  MWAWVec2i m_pos[2];
 };
 
 //! the Apple© printer information : TPrint

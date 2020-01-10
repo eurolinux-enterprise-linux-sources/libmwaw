@@ -36,27 +36,58 @@
 
 #include <vector>
 
-#include <libwpd/libwpd.h>
+#include <librevenge/librevenge.h>
 
 #include "libmwaw_internal.hxx"
 
-/** This class contains a virtual interface to all listener
+#include "MWAWGraphicStyle.hxx"
 
- \note actually contains mainly code for adding text */
+class MWAWCell;
+class MWAWTable;
+
+/** This class contains a virtual interface to all listener */
 class MWAWListener
 {
 public:
+  //! destructor
   virtual ~MWAWListener() {}
 
+  //! the listener type
+  enum Type { Graphic, Presentation, Spreadsheet, Text };
   /** the different break type */
   enum BreakType { PageBreak=0, SoftPageBreak, ColumnBreak };
 
-  /** returns true if a document is opened */
-  virtual bool isDocumentStarted() const =0;
+  //------- generic accessor ---
+  /** returns the listener type */
+  virtual Type getType() const = 0;
   /** returns true if we can add text data */
   virtual bool canWriteText() const =0;
-  /** returns true if a subdocument is open  */
-  virtual bool isSubDocumentOpened(libmwaw::SubDocumentType &subdocType) const = 0;
+
+  // ------ main document -------
+  /** sets the documents language */
+  virtual void setDocumentLanguage(std::string locale) = 0;
+  /** starts the document */
+  virtual void startDocument() = 0;
+  /** returns true if a document is opened */
+  virtual bool isDocumentStarted() const =0;
+  /** ends the document */
+  virtual void endDocument(bool sendDelayedSubDoc=true) = 0;
+
+  // ------ page --------
+  /** returns true if a page is opened */
+  virtual bool isPageSpanOpened() const = 0;
+  /** returns the current page span
+
+  \note this forces the opening of a new page if no page is opened.*/
+  virtual MWAWPageSpan const &getPageSpan() = 0;
+
+  // ------ header/footer --------
+  /** insert a header (interaction with MWAWPageSpan which fills the parameters for openHeader) */
+  virtual bool insertHeader(MWAWSubDocumentPtr subDocument, librevenge::RVNGPropertyList const &extras) = 0;
+  /** insert a footer (interaction with MWAWPageSpan which fills the parameters for openFooter) */
+  virtual bool insertFooter(MWAWSubDocumentPtr subDocument, librevenge::RVNGPropertyList const &extras) = 0;
+  /** returns true if the header/footer is open */
+  virtual bool isHeaderFooterOpened() const = 0;
 
   // ------ text data -----------
   //! adds a basic character, ..
@@ -74,7 +105,7 @@ public:
    *  By convention if \a character=0xfffd(undef), no character is added */
   virtual void insertUnicode(uint32_t character)=0;
   //! adds a unicode string
-  virtual void insertUnicodeString(WPXString const &str)=0;
+  virtual void insertUnicodeString(librevenge::RVNGString const &str)=0;
 
   //! adds a tab
   virtual void insertTab()=0;
@@ -99,6 +130,29 @@ public:
   //! adds a field type
   virtual void insertField(MWAWField const &field)=0;
 
+  // ------- link ----------------
+
+  //! open a link
+  virtual void openLink(MWAWLink const &link)=0;
+  //! close a link
+  virtual void closeLink()=0;
+
+  // ------- table -----------------
+  /** open a table*/
+  virtual void openTable(MWAWTable const &table) = 0;
+  /** closes this table */
+  virtual void closeTable() = 0;
+  /** open a row with given height ( if h < 0.0, set min-row-height = -h )*/
+  virtual void openTableRow(float h, librevenge::RVNGUnit unit, bool headerRow=false) = 0;
+  /** closes this row */
+  virtual void closeTableRow() = 0;
+  /** open a cell */
+  virtual void openTableCell(MWAWCell const &cell) = 0;
+  /** close a cell */
+  virtual void closeTableCell() = 0;
+  /** add empty cell */
+  virtual void addEmptyTableCell(MWAWVec2i const &pos, MWAWVec2i span=MWAWVec2i(1,1)) = 0;
+
   // ------- section ---------------
   /** returns true if we can add open a section, add page break, ... */
   virtual bool canOpenSectionAddBreak() const =0;
@@ -113,6 +167,28 @@ public:
   //! inserts a break type: ColumBreak, PageBreak, ..
   virtual void insertBreak(BreakType breakType)=0;
 
+  // ------- subdocument ---------------
+  /** insert a note */
+  virtual void insertNote(MWAWNote const &note, MWAWSubDocumentPtr &subDocument)=0;
+  /** adds comment */
+  virtual void insertComment(MWAWSubDocumentPtr &subDocument) = 0;
+  /** adds a picture in given position */
+  virtual void insertPicture(MWAWPosition const &pos, const librevenge::RVNGBinaryData &binaryData,
+                             std::string type="image/pict", MWAWGraphicStyle const &style=MWAWGraphicStyle::emptyStyle()) = 0;
+  /** adds a shape picture in given position */
+  virtual void insertPicture(MWAWPosition const &pos, MWAWGraphicShape const &shape,
+                             MWAWGraphicStyle const &style) = 0;
+  /** adds a textbox in given position */
+  virtual void insertTextBox(MWAWPosition const &pos, MWAWSubDocumentPtr subDocument,
+                             MWAWGraphicStyle const &frameStyle=MWAWGraphicStyle::emptyStyle()) = 0;
+  /** low level: tries to open a frame */
+  virtual bool openFrame(MWAWPosition const &pos, MWAWGraphicStyle const &style=MWAWGraphicStyle::emptyStyle()) = 0;
+  /** low level: tries to close the last open frame */
+  virtual void closeFrame() = 0;
+  /** low level: function called to add a subdocument */
+  virtual void handleSubDocument(MWAWSubDocumentPtr subDocument, libmwaw::SubDocumentType subDocumentType) = 0;
+  /** returns true if a subdocument is open  */
+  virtual bool isSubDocumentOpened(libmwaw::SubDocumentType &subdocType) const = 0;
 };
 
 #endif

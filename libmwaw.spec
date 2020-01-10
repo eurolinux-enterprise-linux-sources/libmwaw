@@ -1,11 +1,10 @@
-%global apiversion 0.2
+%global apiversion 0.3
 
 Name: libmwaw
-Version: 0.2.0
-Release: 4%{?dist}
-Summary: An import library for many old mac document formats
+Version: 0.3.5
+Release: 1%{?dist}
+Summary: A library for import of many old Mac document formats
 
-Group: System Environment/Libraries
 License: LGPLv2+ or MPLv2.0
 URL: http://sourceforge.net/projects/libmwaw/
 Source: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz
@@ -13,28 +12,20 @@ Source: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz
 BuildRequires: boost-devel
 BuildRequires: doxygen
 BuildRequires: help2man
-BuildRequires: pkgconfig(libwpd-0.9)
-BuildRequires: pkgconfig(libwpg-0.2)
+BuildRequires: pkgconfig(librevenge-0.0)
 
-Patch0: 0001-std-isfinite-is-C-11.patch
-Patch1: 0002-use-correct-type.patch
-Patch2: 0003-Correct-some-cppcheck-errors-change-code-to-avoid-ca.patch
-Patch3: 0004-avoid-leak.patch
-Patch4: 0005-ClarisWorks-parser-try-to-reconstruct-compressed-bit.patch
-Patch5: 0006-ClarisWorks-parser-use-the-page-size-to-define-the-b.patch
-Patch6: 0007-MacWrite-MacWrite-II-parser-try-to-accept-more-files.patch
-Patch7: 0008-Correct-a-potential-out-of-bounds-problem.patch
+Patch0: 0001-do-not-deref.-end-iterator.patch
 
 %description
-libmwaw contains import filters for many old mac documents, mostly text
-formats like ClarisWorks, MacWrite or MS Word for Mac, but it has a
-limited support for vector drawings and spreadsheets as well (limited in
-the sense that it treats them as text documents). Full list of supported
-formats is available at https://sourceforge.net/p/libmwaw/wiki/Home/ .
+{name} is a library for import of old Mac documents. It supports many
+kinds of text documents, spreadsheets, databases, vector and bitmap
+images. Supported are, for example, documents created by BeagleWorks,
+ClarisWorks, MacPaint, MacWrite or Microsoft Word for Mac. Full (and
+actual) list of supported formats is available at
+https://sourceforge.net/p/libmwaw/wiki/Home/ .
 
 %package devel
 Summary: Development files for %{name}
-Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
@@ -43,7 +34,6 @@ developing applications that use %{name}.
 
 %package doc
 Summary: Documentation of %{name} API
-Group: Documentation
 BuildArch: noarch
 
 %description doc
@@ -51,12 +41,11 @@ The %{name}-doc package contains documentation files for %{name}.
 
 %package tools
 Summary: Tools to transform the supported formats into other formats
-Group: Applications/Publishing
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description tools
 Tools to transform the supported document formats into other formats.
-Supported output formats are CSV, XHTML, text and raw.
+Supported output formats are CSV, HTML, SVG, plain text and raw.
 
 %prep
 %autosetup -p1
@@ -73,6 +62,7 @@ export LD_LIBRARY_PATH=`pwd`/src/lib/.libs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}
 help2man -N -n 'convert Mac spreadsheet into CSV' -o mwaw2csv.1 ./src/conv/csv/.libs/mwaw2csv
 help2man -N -n 'debug the conversion library' -o mwaw2raw.1 ./src/conv/raw/.libs/mwaw2raw
 help2man -N -n 'convert Mac text document into HTML' -o mwaw2html.1 ./src/conv/html/.libs/mwaw2html
+help2man -N -n 'convert Mac drawing into SVG' -o mwaw2svg.1 ./src/conv/svg/.libs/mwaw2svg
 help2man -N -n 'convert Mac text document into plain text' -o mwaw2text.1 ./src/conv/text/.libs/mwaw2text
 
 %install
@@ -107,13 +97,24 @@ install -m 0644 mwaw2*.1 %{buildroot}/%{_mandir}/man1
 %{_bindir}/mwaw2csv
 %{_bindir}/mwaw2html
 %{_bindir}/mwaw2raw
+%{_bindir}/mwaw2svg
 %{_bindir}/mwaw2text
 %{_mandir}/man1/mwaw2csv.1*
 %{_mandir}/man1/mwaw2html.1*
 %{_mandir}/man1/mwaw2raw.1*
+%{_mandir}/man1/mwaw2svg.1*
 %{_mandir}/man1/mwaw2text.1*
 
 %changelog
+* Tue May 26 2015 David Tardon <dtardon@redhat.com> - 0.3.5-1
+- Resolves: rhbz#1207757 rebase to 0.3.5
+
+* Tue May 05 2015 David Tardon <dtardon@redhat.com> - 0.3.4-2
+- Related: rhbz#1207757 coverity fix
+
+* Fri Apr 17 2015 David Tardon <dtardon@redhat.com> - 0.3.4-1
+- Resolves: rhbz#1207757 rebase to 0.3.4
+
 * Fri Aug 22 2014 David Tardon <dtardon@redhat.com> - 0.2.0-4
 - Resolves: rhbz#1132070 rebase to 0.2.0
 

@@ -42,9 +42,8 @@
 #include <vector>
 
 #include "libmwaw_internal.hxx"
+#include "MWAWDebug.hxx"
 #include "MWAWPict.hxx"
-
-class WPXBinaryData;
 
 ////////////////////////////////////////////////////////////
 //
@@ -57,21 +56,27 @@ template <class T> class MWAWPictBitmapContainer
 {
 public:
   //! constructor given size
-  MWAWPictBitmapContainer(Vec2i const &sz) : m_size(sz), m_data(0L) {
-    if (m_size[0]*m_size[1] != 0) m_data = new T[size_t(m_size[0]*m_size[1])];
+  MWAWPictBitmapContainer(MWAWVec2i const &sz) : m_size(sz), m_data(0L)
+  {
+    if (m_size[0]*m_size[1] == 0) return;
+    m_data = new T[size_t(m_size[0]*m_size[1])];
+    std::uninitialized_fill_n(m_data, m_size[0] * m_size[1], T());
   }
   //! destructor
-  virtual ~MWAWPictBitmapContainer() {
+  virtual ~MWAWPictBitmapContainer()
+  {
     if (m_data) delete [] m_data;
   }
 
   //! returns ok, if the m_data is allocated
-  bool ok() const {
+  bool ok() const
+  {
     return (m_data != 0L);
   }
 
   //! a comparison operator
-  int cmp(MWAWPictBitmapContainer<T> const &orig) const {
+  int cmp(MWAWPictBitmapContainer<T> const &orig) const
+  {
     int diff = m_size.cmpY(orig.m_size);
     if (diff) return diff;
     if (!m_data) return orig.m_data ? 1 : 0;
@@ -83,46 +88,65 @@ public:
     return 0;
   }
   //! return the array size
-  Vec2i const &size() const {
+  MWAWVec2i const &size() const
+  {
     return m_size;
   }
   //! gets the number of row
-  int numRows() const {
+  int numRows() const
+  {
     return m_size[0];
   }
   //! gets the number of column
-  int numColumns() const {
+  int numColumns() const
+  {
     return m_size[1];
   }
 
   //! accessor of a cell m_data
-  T const &get(int i, int j) const {
-    assert(m_data != 0L && i>=0 && i < m_size[0] && j>=0 && j < m_size[1]);
+  T const &get(int i, int j) const
+  {
+    if (m_data == 0L || i<0 || i >= m_size[0] || j<0 || j >= m_size[1])
+      throw libmwaw::GenericException();
     return m_data[i+m_size[0]*j];
   }
   //! accessor of a row m_data
-  T const *getRow(int j) const {
-    assert(m_data != 0L && j>=0 && j < m_size[1]);
+  T const *getRow(int j) const
+  {
+    if (m_data == 0L || j<0 || j >= m_size[1])
+      throw libmwaw::GenericException();
     return m_data+m_size[0]*j;
   }
 
   //! sets a cell m_data
-  void set(int i, int j, T const &v) {
-    assert(m_data != 0L && i>=0 && i < m_size[0] && j>=0 && j < m_size[1]);
+  void set(int i, int j, T const &v)
+  {
+    if (m_data == 0L || i<0 || i >= m_size[0] || j<0 || j >= m_size[1]) {
+      MWAW_DEBUG_MSG(("MWAWPictBitmapContainer::set: call with bad coordinate %d %d\n", i, j));
+      return;
+    }
     m_data[i+j*m_size[0]] = v;
   }
 
   //! sets a line of m_data
   template <class U>
-  void setRow(int j, U const *val) {
-    assert(m_data != 0L && j>=0 && j < m_size[1]);
+  void setRow(int j, U const *val)
+  {
+    if (m_data == 0L || j<0 || j >= m_size[1]) {
+      MWAW_DEBUG_MSG(("MWAWPictBitmapContainer::setRow: call with bad coordinate %d\n", j));
+      return;
+    }
     for (int i = 0, ind=j*m_size[0]; i < m_size[0]; i++, ind++) m_data[ind] = T(val[i]);
   }
 
   //! sets a column of m_data
   template <class U>
-  void setColumn(int i, U const *val) {
-    assert(m_data != 0L && i>=0 && i < m_size[0]);
+  void setColumn(int i, U const *val)
+  {
+    if (m_data == 0L || i<0 || i >= m_size[0]) {
+      MWAW_DEBUG_MSG(("MWAWPictBitmapContainer::setColumn: call with bad coordinate %d\n", i));
+      return;
+    }
     for (int j = 0, ind=i; j < m_size[1]; j++, ind+=m_size[0]) m_data[ind] = T(val[i]);
   }
 
@@ -131,7 +155,7 @@ private:
   MWAWPictBitmapContainer &operator=(MWAWPictBitmapContainer const &orig);
 protected:
   //! the size
-  Vec2i m_size;
+  MWAWVec2i m_size;
   //! the m_data placed by row ie. d_00, d_10, ... , d_{X-1}0, ..
   T *m_data;
 };
@@ -141,10 +165,11 @@ class MWAWPictBitmapContainerBool : public MWAWPictBitmapContainer<bool>
 {
 public:
   //! constructor
-  MWAWPictBitmapContainerBool(Vec2i const &sz) : MWAWPictBitmapContainer<bool>(sz) {}
+  MWAWPictBitmapContainerBool(MWAWVec2i const &sz) : MWAWPictBitmapContainer<bool>(sz) {}
 
   //! a comparison operator
-  int cmp(MWAWPictBitmapContainerBool const &orig) const {
+  int cmp(MWAWPictBitmapContainerBool const &orig) const
+  {
     int diff = m_size.cmpY(orig.m_size);
     if (diff) return diff;
     if (!m_data) return orig.m_data ? 1 : 0;
@@ -157,14 +182,18 @@ public:
   }
 
   //! allows to use packed m_data
-  void setRowPacked(int j, unsigned char const *val) {
-    assert(m_data != 0L && j>=0 && j < m_size[1]);
-    for (int i = 0, ind = j*m_size[0]; i < m_size[0]; ) {
+  void setRowPacked(int j, unsigned char const *val)
+  {
+    if (m_data == 0L || j<0 || j >= m_size[1]) {
+      MWAW_DEBUG_MSG(("MWAWPictBitmapContainerBool::setRowPacked: call with bad coordinate %d\n", j));
+      return;
+    }
+    for (int i = 0, ind = j*m_size[0]; i < m_size[0];) {
       unsigned char v = *(val++);
       unsigned char mask = 0x80;
       for (int p = 0; p < 8 && i < m_size[0]; i++, p++, ind++) {
         m_data[ind] = ((v&mask) != 0);
-        mask = (unsigned char) (mask >> 1);
+        mask = (unsigned char)(mask >> 1);
       }
     }
   }
@@ -177,14 +206,16 @@ public:
   //! the picture subtype: blackwhite, indexed, color
   enum SubType { BW, Indexed, Color };
   //! returns the picture type
-  virtual Type getType() const {
+  virtual Type getType() const
+  {
     return MWAWPict::Bitmap;
   }
   //! returns the picture subtype
   virtual SubType getSubType() const = 0;
 
-  //! returns the final WPXBinary data
-  virtual bool getBinary(WPXBinaryData &res, std::string &s) const {
+  //! returns the final librevenge::RVNGBinary data
+  virtual bool getBinary(librevenge::RVNGBinaryData &res, std::string &s) const
+  {
     if (!valid()) return false;
 
     s = "image/pict";
@@ -193,13 +224,15 @@ public:
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return false;
   }
 
   /** a virtual function used to obtain a strict order,
   must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     int diff = MWAWPict::cmp(a);
     if (diff) return diff;
     MWAWPictBitmap const &aPict = static_cast<MWAWPictBitmap const &>(a);
@@ -213,11 +246,12 @@ public:
 
 protected:
   //! abstract function which creates the result file
-  virtual bool createFileData(WPXBinaryData &result) const = 0;
+  virtual bool createFileData(librevenge::RVNGBinaryData &result) const = 0;
 
   //! protected constructor: use check to construct a picture
-  MWAWPictBitmap(Vec2i const &sz) {
-    setBdBox(Box2f(Vec2f(0,0), sz));
+  MWAWPictBitmap(MWAWVec2i const &sz)
+  {
+    setBdBox(MWAWBox2f(MWAWVec2f(0,0), sz));
   }
 };
 
@@ -226,13 +260,15 @@ class MWAWPictBitmapBW : public MWAWPictBitmap
 {
 public:
   //! returns the picture subtype
-  virtual SubType getSubType() const {
+  virtual SubType getSubType() const
+  {
     return BW;
   }
 
   /** a virtual function used to obtain a strict order,
   must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     int diff = MWAWPictBitmap::cmp(a);
     if (diff) return diff;
     MWAWPictBitmapBW const &aPict = static_cast<MWAWPictBitmapBW const &>(a);
@@ -241,53 +277,63 @@ public:
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return m_data.ok();
   }
 
   //! the constructor
-  MWAWPictBitmapBW(Vec2i const &sz) : MWAWPictBitmap(sz), m_data(sz) { }
+  MWAWPictBitmapBW(MWAWVec2i const &sz) : MWAWPictBitmap(sz), m_data(sz) { }
 
   //! the picture size
-  Vec2i const &size() const {
+  MWAWVec2i const &size() const
+  {
     return m_data.size();
   }
   //! the number of rows
-  int numRows() const {
+  int numRows() const
+  {
     return m_data.numRows();
   }
   //! the number of columns
-  int numColumns() const {
+  int numColumns() const
+  {
     return m_data.numColumns();
   }
   //! returns a cell content
-  bool get(int i, int j) const {
+  bool get(int i, int j) const
+  {
     return m_data.get(i,j);
   }
   //! returns the cells content of a row
-  bool const *getRow(int j) const {
+  bool const *getRow(int j) const
+  {
     return m_data.getRow(j);
   }
   //! sets a cell contents
-  void set(int i, int j, bool v) {
+  void set(int i, int j, bool v)
+  {
     m_data.set(i,j, v);
   }
   //! sets all cell contents of a row
-  void setRow(int j, bool const *val) {
+  void setRow(int j, bool const *val)
+  {
     m_data.setRow(j, val);
   }
   //! sets all cell contents of a row given packed m_data
-  void setRowPacked(int j, unsigned char const *val) {
+  void setRowPacked(int j, unsigned char const *val)
+  {
     m_data.setRowPacked(j, val);
   }
   //! sets all cell contents of a column
-  void setColumn(int i, bool const *val) {
+  void setColumn(int i, bool const *val)
+  {
     m_data.setColumn(i, val);
   }
 
 protected:
   //! function which creates the result file
-  virtual bool createFileData(WPXBinaryData &result) const;
+  virtual bool createFileData(librevenge::RVNGBinaryData &result) const;
 
   //! the data
   MWAWPictBitmapContainerBool m_data;
@@ -298,13 +344,15 @@ class MWAWPictBitmapIndexed : public MWAWPictBitmap
 {
 public:
   //! return the picture subtype
-  virtual SubType getSubType() const {
+  virtual SubType getSubType() const
+  {
     return Indexed;
   }
 
   /** a virtual function used to obtain a strict order,
   must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     int diff = MWAWPictBitmap::cmp(a);
     if (diff) return diff;
     MWAWPictBitmapIndexed const &aPict = static_cast<MWAWPictBitmapIndexed const &>(a);
@@ -321,59 +369,70 @@ public:
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return m_data.ok();
   }
 
   //! the constructor
-  MWAWPictBitmapIndexed(Vec2i const &sz) : MWAWPictBitmap(sz), m_data(sz), m_colors() { }
+  MWAWPictBitmapIndexed(MWAWVec2i const &sz) : MWAWPictBitmap(sz), m_data(sz), m_colors() { }
 
   //! the picture size
-  Vec2i const &size() const {
+  MWAWVec2i const &size() const
+  {
     return m_data.size();
   }
   //! the number of rows
-  int numRows() const {
+  int numRows() const
+  {
     return m_data.numRows();
   }
   //! the number of columns
-  int numColumns() const {
+  int numColumns() const
+  {
     return m_data.numColumns();
   }
   //! returns a cell content
-  int get(int i, int j) const {
+  int get(int i, int j) const
+  {
     return m_data.get(i,j);
   }
   //! returns the cells content of a row
-  int const *getRow(int j) const {
+  int const *getRow(int j) const
+  {
     return m_data.getRow(j);
   }
 
   //! sets a cell contents
-  void set(int i, int j, int v) {
+  void set(int i, int j, int v)
+  {
     m_data.set(i,j, v);
   }
   //! sets all cell contents of a row
-  template <class U> void setRow(int j, U const *val) {
+  template <class U> void setRow(int j, U const *val)
+  {
     m_data.setRow(j, val);
   }
   //! sets all cell contents of a column
-  template <class U> void setColumn(int i, U const *val) {
+  template <class U> void setColumn(int i, U const *val)
+  {
     m_data.setColumn(i, val);
   }
 
   //! returns the array of indexed colors
-  std::vector<MWAWColor> const &getColors() const {
+  std::vector<MWAWColor> const &getColors() const
+  {
     return m_colors;
   }
   //! sets the array of indexed colors
-  void setColors(std::vector<MWAWColor> const &cols) {
+  void setColors(std::vector<MWAWColor> const &cols)
+  {
     m_colors = cols;
   }
 
 protected:
   //! the function which creates the result file
-  virtual bool createFileData(WPXBinaryData &result) const;
+  virtual bool createFileData(librevenge::RVNGBinaryData &result) const;
 
   //! the m_data
   MWAWPictBitmapContainer<int> m_data;
@@ -381,18 +440,26 @@ protected:
   std::vector<MWAWColor> m_colors;
 };
 
-/** a bitmap of Vec3u to store true color bitmap */
+/** a bitmap of MWAWColor to store true color bitmap
+
+    \note: this class is actually the only class which can create
+    bitmap with transparency (by creating a BMP), but as
+    LibreOffice/OpenOffice seem to ignore the alpha channel when
+    importing BMP pictures...
+ */
 class MWAWPictBitmapColor : public MWAWPictBitmap
 {
 public:
   //! return the picture subtype
-  virtual SubType getSubType() const {
+  virtual SubType getSubType() const
+  {
     return Indexed;
   }
 
   /** a virtual function used to obtain a strict order,
   must be redefined in the subs class */
-  virtual int cmp(MWAWPict const &a) const {
+  virtual int cmp(MWAWPict const &a) const
+  {
     int diff = MWAWPictBitmap::cmp(a);
     if (diff) return diff;
     MWAWPictBitmapColor const &aPict = static_cast<MWAWPictBitmapColor const &>(a);
@@ -401,53 +468,65 @@ public:
   }
 
   //! returns true if the picture is valid
-  virtual bool valid() const {
+  virtual bool valid() const
+  {
     return m_data.ok();
   }
 
   //! the constructor
-  MWAWPictBitmapColor(Vec2i const &sz) : MWAWPictBitmap(sz), m_data(sz) { }
+  MWAWPictBitmapColor(MWAWVec2i const &sz, bool useAlphaChannel=false) : MWAWPictBitmap(sz), m_data(sz), m_hasAlpha(useAlphaChannel) { }
 
   //! the picture size
-  Vec2i const &size() const {
+  MWAWVec2i const &size() const
+  {
     return m_data.size();
   }
   //! the number of rows
-  int numRows() const {
+  int numRows() const
+  {
     return m_data.numRows();
   }
   //! the number of columns
-  int numColumns() const {
+  int numColumns() const
+  {
     return m_data.numColumns();
   }
   //! returns a cell content
-  MWAWColor get(int i, int j) const {
+  MWAWColor get(int i, int j) const
+  {
     return m_data.get(i,j);
   }
   //! returns the cells content of a row
-  MWAWColor const *getRow(int j) const {
+  MWAWColor const *getRow(int j) const
+  {
     return m_data.getRow(j);
   }
 
   //! sets a cell contents
-  void set(int i, int j, MWAWColor const &v) {
+  void set(int i, int j, MWAWColor const &v)
+  {
     m_data.set(i,j, v);
   }
   //! sets all cell contents of a row
-  void setRow(int j, MWAWColor const *val) {
+  void setRow(int j, MWAWColor const *val)
+  {
     m_data.setRow(j, val);
   }
   //! sets all cell contents of a column
-  void setColumn(int i, MWAWColor const *val) {
+  void setColumn(int i, MWAWColor const *val)
+  {
     m_data.setColumn(i, val);
   }
 
 protected:
   //! the function which creates the result file
-  virtual bool createFileData(WPXBinaryData &result) const;
+  virtual bool createFileData(librevenge::RVNGBinaryData &result) const;
 
   //! the data
   MWAWPictBitmapContainer<MWAWColor> m_data;
+
+  //! true if the bitmap has alpha color
+  bool m_hasAlpha;
 };
 #endif
 // vim: set filetype=cpp tabstop=2 shiftwidth=2 cindent autoindent smartindent noexpandtab:

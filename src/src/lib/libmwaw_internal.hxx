@@ -38,6 +38,7 @@
 #include <stdio.h>
 #endif
 
+#include <cmath>
 #include <map>
 #include <ostream>
 #include <string>
@@ -48,8 +49,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include <libwpd-stream/libwpd-stream.h>
-#include <libwpd/libwpd.h>
+#include <librevenge-stream/librevenge-stream.h>
+#include <librevenge/librevenge.h>
 
 #if defined(_MSC_VER) || defined(__DJGPP__)
 
@@ -106,12 +107,22 @@ using boost::shared_ptr;
 /** an noop deleter used to transform a libwpd pointer in a false shared_ptr */
 template <class T>
 struct MWAW_shared_ptr_noop_deleter {
-  void operator() (T *) {}
+  void operator()(T *) {}
 };
+
+#if defined(__clang__) || defined(__GNUC__)
+#  define LIBMWAW_ATTRIBUTE_PRINTF(fmt, arg) __attribute__((__format__(__printf__, fmt, arg)))
+#else
+#  define LIBMWAW_ATTRIBUTE_PRINTF(fmt, arg)
+#endif
 
 /* ---------- debug  --------------- */
 #ifdef DEBUG
-#define MWAW_DEBUG_MSG(M) printf M
+namespace libmwaw
+{
+void printDebugMsg(const char *format, ...) LIBMWAW_ATTRIBUTE_PRINTF(1,2);
+}
+#define MWAW_DEBUG_MSG(M) libmwaw::printDebugMsg M
 #else
 #define MWAW_DEBUG_MSG(M)
 #endif
@@ -143,9 +154,9 @@ class WrongPasswordException
 /* ---------- input ----------------- */
 namespace libmwaw
 {
-uint8_t readU8(WPXInputStream *input);
+uint8_t readU8(librevenge::RVNGInputStream *input);
 //! adds an unicode character to a string
-void appendUnicode(uint32_t val, WPXString &buffer);
+void appendUnicode(uint32_t val, librevenge::RVNGString &buffer);
 }
 
 /* ---------- small enum/class ------------- */
@@ -159,69 +170,130 @@ enum { LeftBit = 0x01,  RightBit = 0x02, TopBit=0x4, BottomBit = 0x08, HMiddleBi
 enum NumberingType { NONE, BULLET, ARABIC, LOWERCASE, UPPERCASE, LOWERCASE_ROMAN, UPPERCASE_ROMAN };
 std::string numberingTypeToString(NumberingType type);
 std::string numberingValueToString(NumberingType type, int value);
-enum SubDocumentType { DOC_NONE, DOC_HEADER_FOOTER, DOC_NOTE, DOC_TABLE, DOC_TEXT_BOX, DOC_COMMENT_ANNOTATION, DOC_GRAPHIC_GROUP };
+enum SubDocumentType { DOC_NONE, DOC_CHART, DOC_CHART_ZONE, DOC_COMMENT_ANNOTATION, DOC_GRAPHIC_GROUP, DOC_HEADER_FOOTER, DOC_NOTE, DOC_SHEET, DOC_TABLE, DOC_TEXT_BOX };
 }
 
 //! the class to store a color
 struct MWAWColor {
   //! constructor
-  MWAWColor(uint32_t argb=0) : m_value(argb) {
+  MWAWColor(uint32_t argb=0) : m_value(argb)
+  {
   }
   //! constructor from color
-  MWAWColor(unsigned char r, unsigned char g,  unsigned char b, unsigned char a=0) :
-    m_value(uint32_t((a<<24)+(r<<16)+(g<<8)+b)) {
+  MWAWColor(unsigned char r, unsigned char g,  unsigned char b, unsigned char a=255) :
+    m_value(uint32_t((a<<24)+(r<<16)+(g<<8)+b))
+  {
   }
   //! operator=
-  MWAWColor &operator=(uint32_t argb) {
+  MWAWColor &operator=(uint32_t argb)
+  {
     m_value = argb;
     return *this;
   }
+  //! return a color from a cmyk color ( basic)
+  static MWAWColor colorFromCMYK(unsigned char c, unsigned char m,  unsigned char y, unsigned char k)
+  {
+    double w=1.-double(k)/255.;
+    return MWAWColor
+           ((unsigned char)(255 * (1-double(c)/255) * w),
+            (unsigned char)(255 * (1-double(m)/255) * w),
+            (unsigned char)(255 * (1-double(y)/255) * w)
+           );
+  }
+  //! return a color from a hsl color (basic)
+  static MWAWColor colorFromHSL(unsigned char H, unsigned char S,  unsigned char L)
+  {
+    double c=(1-((L>=128) ? (2*double(L)-255) : (255-2*double(L)))/255)*
+             double(S)/255;
+    double tmp=std::fmod((double(H)*6/255),2)-1;
+    double x=c*(1-(tmp>0 ? tmp : -tmp));
+    unsigned char C=(unsigned char)(255*c);
+    unsigned char M=(unsigned char)(double(L)-255*c/2);
+    unsigned char X=(unsigned char)(255*x);
+    if (H<=42) return MWAWColor((unsigned char)(M+C),(unsigned char)(M+X),(unsigned char)M);
+    if (H<=85) return MWAWColor((unsigned char)(M+X),(unsigned char)(M+C),(unsigned char)M);
+    if (H<=127) return MWAWColor((unsigned char)M,(unsigned char)(M+C),(unsigned char)(M+X));
+    if (H<=170) return MWAWColor((unsigned char)M,(unsigned char)(M+X),(unsigned char)(M+C));
+    if (H<=212) return MWAWColor((unsigned char)(M+X),(unsigned char)M,(unsigned char)(M+C));
+    return MWAWColor((unsigned char)(M+C),(unsigned char)(M),(unsigned char)(M+X));
+  }
   //! return the back color
-  static MWAWColor black() {
-    return MWAWColor(0);
+  static MWAWColor black()
+  {
+    return MWAWColor(0,0,0);
   }
   //! return the white color
-  static MWAWColor white() {
-    return MWAWColor(0xFFFFFF);
+  static MWAWColor white()
+  {
+    return MWAWColor(255,255,255);
   }
 
   //! return alpha*colA+beta*colB
   static MWAWColor barycenter(float alpha, MWAWColor const &colA,
                               float beta, MWAWColor const &colB);
   //! return the rgba value
-  uint32_t value() const {
+  uint32_t value() const
+  {
     return m_value;
   }
+  //! returns the alpha value
+  unsigned char getAlpha() const
+  {
+    return (unsigned char)((m_value>>24)&0xFF);
+  }
+  //! returns the green value
+  unsigned char getBlue() const
+  {
+    return (unsigned char)(m_value&0xFF);
+  }
+  //! returns the red value
+  unsigned char getRed() const
+  {
+    return (unsigned char)((m_value>>16)&0xFF);
+  }
+  //! returns the green value
+  unsigned char getGreen() const
+  {
+    return (unsigned char)((m_value>>8)&0xFF);
+  }
   //! return true if the color is black
-  bool isBlack() const {
+  bool isBlack() const
+  {
     return (m_value&0xFFFFFF)==0;
   }
   //! return true if the color is white
-  bool isWhite() const {
+  bool isWhite() const
+  {
     return (m_value&0xFFFFFF)==0xFFFFFF;
   }
   //! operator==
-  bool operator==(MWAWColor const &c) const {
+  bool operator==(MWAWColor const &c) const
+  {
     return (c.m_value&0xFFFFFF)==(m_value&0xFFFFFF);
   }
   //! operator!=
-  bool operator!=(MWAWColor const &c) const {
+  bool operator!=(MWAWColor const &c) const
+  {
     return !operator==(c);
   }
   //! operator<
-  bool operator<(MWAWColor const &c) const {
+  bool operator<(MWAWColor const &c) const
+  {
     return (c.m_value&0xFFFFFF)<(m_value&0xFFFFFF);
   }
   //! operator<=
-  bool operator<=(MWAWColor const &c) const {
+  bool operator<=(MWAWColor const &c) const
+  {
     return (c.m_value&0xFFFFFF)<=(m_value&0xFFFFFF);
   }
   //! operator>
-  bool operator>(MWAWColor const &c) const {
+  bool operator>(MWAWColor const &c) const
+  {
     return !operator<=(c);
   }
   //! operator>=
-  bool operator>=(MWAWColor const &c) const {
+  bool operator>=(MWAWColor const &c) const
+  {
     return !operator<(c);
   }
   //! operator<< in the form \#rrggbb
@@ -245,17 +317,20 @@ struct MWAWBorder {
   /** add the border property to proplist (if needed )
 
   \note if set which must be equal to "left", "top", ... */
-  bool addTo(WPXPropertyList &propList, std::string which="") const;
+  bool addTo(librevenge::RVNGPropertyList &propList, std::string which="") const;
   //! returns true if the border is empty
-  bool isEmpty() const {
+  bool isEmpty() const
+  {
     return m_style==None || m_width <= 0;
   }
   //! operator==
-  bool operator==(MWAWBorder const &orig) const {
+  bool operator==(MWAWBorder const &orig) const
+  {
     return !operator!=(orig);
   }
   //! operator!=
-  bool operator!=(MWAWBorder const &orig) const {
+  bool operator!=(MWAWBorder const &orig) const
+  {
     return m_style != orig.m_style || m_type != orig.m_type ||
            m_width < orig.m_width || m_width > orig.m_width || m_color != orig.m_color;
   }
@@ -285,10 +360,11 @@ struct MWAWBorder {
 //! a field
 struct MWAWField {
   /** Defines some basic type for field */
-  enum Type { None, PageCount, PageNumber, Date, Time, Title, Link, Database };
+  enum Type { None, PageCount, PageNumber, Date, Time, Title, Database };
 
   /** basic constructor */
-  MWAWField(Type type) : m_type(type), m_DTFormat(""), m_numberingType(libmwaw::ARABIC), m_data("") {
+  MWAWField(Type type) : m_type(type), m_DTFormat(""), m_numberingType(libmwaw::ARABIC), m_data("")
+  {
   }
   //! the type
   Type m_type;
@@ -300,17 +376,32 @@ struct MWAWField {
   std::string m_data;
 };
 
+//! a link
+struct MWAWLink {
+  /** basic constructor */
+  MWAWLink() : m_HRef("")
+  {
+  }
+
+  /** add the link property to proplist (if needed ) */
+  bool addTo(librevenge::RVNGPropertyList &propList) const;
+
+  //! the href field
+  std::string m_HRef;
+};
+
 //! a note
 struct MWAWNote {
   //! enum to define note type
   enum Type { FootNote, EndNote };
   //! constructor
-  MWAWNote(Type type) : m_type(type), m_label(""), m_number(-1) {
+  MWAWNote(Type type) : m_type(type), m_label(""), m_number(-1)
+  {
   }
   //! the note type
   Type m_type;
   //! the note label
-  WPXString m_label;
+  librevenge::RVNGString m_label;
   //! the note number if defined
   int m_number;
 };
@@ -318,7 +409,7 @@ struct MWAWNote {
 // forward declarations of basic classes and smart pointers
 class MWAWEntry;
 class MWAWFont;
-class MWAWGraphicInterface;
+class MWAWGraphicEncoder;
 class MWAWGraphicShape;
 class MWAWGraphicStyle;
 class MWAWHeader;
@@ -329,17 +420,17 @@ class MWAWParser;
 class MWAWPosition;
 class MWAWSection;
 
-class MWAWContentListener;
 class MWAWFontConverter;
 class MWAWGraphicListener;
 class MWAWInputStream;
 class MWAWListener;
 class MWAWListManager;
 class MWAWParserState;
+class MWAWPresentationListener;
 class MWAWRSRCParser;
+class MWAWSpreadsheetListener;
 class MWAWSubDocument;
-//! a smart pointer of MWAWContentListener
-typedef shared_ptr<MWAWContentListener> MWAWContentListenerPtr;
+class MWAWTextListener;
 //! a smart pointer of MWAWFontConverter
 typedef shared_ptr<MWAWFontConverter> MWAWFontConverterPtr;
 //! a smart pointer of MWAWGraphicListener
@@ -350,12 +441,18 @@ typedef shared_ptr<MWAWInputStream> MWAWInputStreamPtr;
 typedef shared_ptr<MWAWListener> MWAWListenerPtr;
 //! a smart pointer of MWAWListManager
 typedef shared_ptr<MWAWListManager> MWAWListManagerPtr;
-//! a smart pointer of MWAWRSRCParser
-typedef shared_ptr<MWAWRSRCParser> MWAWRSRCParserPtr;
 //! a smart pointer of MWAWParserState
 typedef shared_ptr<MWAWParserState> MWAWParserStatePtr;
+//! a smart pointer of MWAWPresentationListener
+typedef shared_ptr<MWAWPresentationListener> MWAWPresentationListenerPtr;
+//! a smart pointer of MWAWRSRCParser
+typedef shared_ptr<MWAWRSRCParser> MWAWRSRCParserPtr;
+//! a smart pointer of MWAWSpreadsheetListener
+typedef shared_ptr<MWAWSpreadsheetListener> MWAWSpreadsheetListenerPtr;
 //! a smart pointer of MWAWSubDocument
 typedef shared_ptr<MWAWSubDocument> MWAWSubDocumentPtr;
+//! a smart pointer of MWAWTextListener
+typedef shared_ptr<MWAWTextListener> MWAWTextListenerPtr;
 
 /** a generic variable template: value + flag to know if the variable is set
 
@@ -363,15 +460,16 @@ typedef shared_ptr<MWAWSubDocument> MWAWSubDocumentPtr;
 when its content is acceded by a function which returns a not-const
 reference... You can use the function setSet to unset it.
 */
-template <class T> struct Variable {
+template <class T> struct MWAWVariable {
   //! constructor
-  Variable() : m_data(), m_set(false) {}
+  MWAWVariable() : m_data(), m_set(false) {}
   //! constructor with a default value
-  Variable(T def) : m_data(def), m_set(false) {}
+  MWAWVariable(T const &def) : m_data(def), m_set(false) {}
   //! copy constructor
-  Variable(Variable const &orig) : m_data(orig.m_data), m_set(orig.m_set) {}
+  MWAWVariable(MWAWVariable const &orig) : m_data(orig.m_data), m_set(orig.m_set) {}
   //! copy operator
-  Variable &operator=(Variable const &orig) {
+  MWAWVariable &operator=(MWAWVariable const &orig)
+  {
     if (this != &orig) {
       m_data = orig.m_data;
       m_set = orig.m_set;
@@ -379,46 +477,55 @@ template <class T> struct Variable {
     return *this;
   }
   //! set a value
-  Variable &operator=(T val) {
+  MWAWVariable &operator=(T const &val)
+  {
     m_data = val;
     m_set = true;
     return *this;
   }
   //! update the current value if orig is set
-  void insert(Variable const &orig) {
+  void insert(MWAWVariable const &orig)
+  {
     if (orig.m_set) {
       m_data = orig.m_data;
       m_set = orig.m_set;
     }
   }
   //! operator*
-  T const *operator->() const {
+  T const *operator->() const
+  {
     return &m_data;
   }
   /** operator* */
-  T *operator->() {
+  T *operator->()
+  {
     m_set = true;
     return &m_data;
   }
   //! operator*
-  T const &operator*() const {
+  T const &operator*() const
+  {
     return m_data;
   }
   //! operator*
-  T &operator*() {
+  T &operator*()
+  {
     m_set = true;
     return m_data;
   }
   //! return the current value
-  T const &get() const {
+  T const &get() const
+  {
     return m_data;
   }
   //! return true if the variable is set
-  bool isSet() const {
+  bool isSet() const
+  {
     return m_set;
   }
   //! define if the variable is set
-  void setSet(bool newVal) {
+  void setSet(bool newVal)
+  {
     m_set=newVal;
   }
 protected:
@@ -429,128 +536,144 @@ protected:
 };
 
 /* ---------- vec2/box2f ------------- */
-/*! \class Vec2
+/*! \class MWAWVec2
  *   \brief small class which defines a vector with 2 elements
  */
-template <class T> class Vec2
+template <class T> class MWAWVec2
 {
 public:
   //! constructor
-  Vec2(T xx=0,T yy=0) : m_x(xx), m_y(yy) { }
+  MWAWVec2(T xx=0,T yy=0) : m_x(xx), m_y(yy) { }
   //! generic copy constructor
-  template <class U> Vec2(Vec2<U> const &p) : m_x(T(p.x())), m_y(T(p.y())) {}
+  template <class U> MWAWVec2(MWAWVec2<U> const &p) : m_x(T(p.x())), m_y(T(p.y())) {}
 
   //! first element
-  T x() const {
+  T x() const
+  {
     return m_x;
   }
   //! second element
-  T y() const {
+  T y() const
+  {
     return m_y;
   }
   //! operator[]
-  T operator[](int c) const {
-    assert(c >= 0 && c <= 1);
+  T operator[](int c) const
+  {
+    if (c<0 || c>1) throw libmwaw::GenericException();
     return (c==0) ? m_x : m_y;
   }
   //! operator[]
-  T &operator[](int c) {
-    assert(c >= 0 && c <= 1);
+  T &operator[](int c)
+  {
+    if (c<0 || c>1) throw libmwaw::GenericException();
     return (c==0) ? m_x : m_y;
   }
 
   //! resets the two elements
-  void set(T xx, T yy) {
+  void set(T xx, T yy)
+  {
     m_x = xx;
     m_y = yy;
   }
   //! resets the first element
-  void setX(T xx) {
+  void setX(T xx)
+  {
     m_x = xx;
   }
   //! resets the second element
-  void setY(T yy) {
+  void setY(T yy)
+  {
     m_y = yy;
   }
 
   //! increases the actuals values by \a dx and \a dy
-  void add(T dx, T dy) {
+  void add(T dx, T dy)
+  {
     m_x += dx;
     m_y += dy;
   }
 
   //! operator+=
-  Vec2<T> &operator+=(Vec2<T> const &p) {
+  MWAWVec2<T> &operator+=(MWAWVec2<T> const &p)
+  {
     m_x += p.m_x;
     m_y += p.m_y;
     return *this;
   }
   //! operator-=
-  Vec2<T> &operator-=(Vec2<T> const &p) {
+  MWAWVec2<T> &operator-=(MWAWVec2<T> const &p)
+  {
     m_x -= p.m_x;
     m_y -= p.m_y;
     return *this;
   }
   //! generic operator*=
   template <class U>
-  Vec2<T> &operator*=(U scale) {
+  MWAWVec2<T> &operator*=(U scale)
+  {
     m_x = T(m_x*scale);
     m_y = T(m_y*scale);
     return *this;
   }
 
   //! operator+
-  friend Vec2<T> operator+(Vec2<T> const &p1, Vec2<T> const &p2) {
-    Vec2<T> p(p1);
+  friend MWAWVec2<T> operator+(MWAWVec2<T> const &p1, MWAWVec2<T> const &p2)
+  {
+    MWAWVec2<T> p(p1);
     return p+=p2;
   }
   //! operator-
-  friend Vec2<T> operator-(Vec2<T> const &p1, Vec2<T> const &p2) {
-    Vec2<T> p(p1);
+  friend MWAWVec2<T> operator-(MWAWVec2<T> const &p1, MWAWVec2<T> const &p2)
+  {
+    MWAWVec2<T> p(p1);
     return p-=p2;
   }
   //! generic operator*
   template <class U>
-  friend Vec2<T> operator*(U scale, Vec2<T> const &p1) {
-    Vec2<T> p(p1);
+  friend MWAWVec2<T> operator*(U scale, MWAWVec2<T> const &p1)
+  {
+    MWAWVec2<T> p(p1);
     return p *= scale;
   }
 
   //! comparison==
-  bool operator==(Vec2<T> const &p) const {
+  bool operator==(MWAWVec2<T> const &p) const
+  {
     return cmpY(p) == 0;
   }
   //! comparison!=
-  bool operator!=(Vec2<T> const &p) const {
+  bool operator!=(MWAWVec2<T> const &p) const
+  {
     return cmpY(p) != 0;
   }
   //! comparison<: sort by y
-  bool operator<(Vec2<T> const &p) const {
+  bool operator<(MWAWVec2<T> const &p) const
+  {
     return cmpY(p) < 0;
   }
   //! a comparison function: which first compares x then y
-  int cmp(Vec2<T> const &p) const {
-    T diff  = m_x-p.m_x;
-    if (diff < 0) return -1;
-    if (diff > 0) return 1;
-    diff = m_y-p.m_y;
-    if (diff < 0) return -1;
-    if (diff > 0) return 1;
+  int cmp(MWAWVec2<T> const &p) const
+  {
+    if (m_x < p.m_x) return -1;
+    if (m_x > p.m_x) return 1;
+    if (m_y < p.m_y) return -1;
+    if (m_y > p.m_y) return 1;
     return 0;
   }
   //! a comparison function: which first compares y then x
-  int cmpY(Vec2<T> const &p) const {
-    T diff  = m_y-p.m_y;
-    if (diff < 0) return -1;
-    if (diff > 0) return 1;
-    diff = m_x-p.m_x;
-    if (diff < 0) return -1;
-    if (diff > 0) return 1;
+  int cmpY(MWAWVec2<T> const &p) const
+  {
+    if (m_y < p.m_y) return -1;
+    if (m_y > p.m_y) return 1;
+    if (m_x < p.m_x) return -1;
+    if (m_x > p.m_x) return 1;
     return 0;
   }
 
   //! operator<<: prints data in form "XxY"
-  friend std::ostream &operator<< (std::ostream &o, Vec2<T> const &f) {
+  friend std::ostream &operator<< (std::ostream &o, MWAWVec2<T> const &f)
+  {
     o << f.m_x << "x" << f.m_y;
     return o;
   }
@@ -560,155 +683,179 @@ public:
    */
   struct PosSizeLtX {
     //! comparaison function
-    bool operator()(Vec2<T> const &s1, Vec2<T> const &s2) const {
+    bool operator()(MWAWVec2<T> const &s1, MWAWVec2<T> const &s2) const
+    {
       return s1.cmp(s2) < 0;
     }
   };
   /*! \typedef MapX
-   *  \brief map of Vec2
+   *  \brief map of MWAWVec2
    */
-  typedef std::map<Vec2<T>, T,struct PosSizeLtX> MapX;
+  typedef std::map<MWAWVec2<T>, T,struct PosSizeLtX> MapX;
 
   /*! \struct PosSizeLtY
    * \brief internal struct used to create sorted map, sorted by Y
    */
   struct PosSizeLtY {
     //! comparaison function
-    bool operator()(Vec2<T> const &s1, Vec2<T> const &s2) const {
+    bool operator()(MWAWVec2<T> const &s1, MWAWVec2<T> const &s2) const
+    {
       return s1.cmpY(s2) < 0;
     }
   };
   /*! \typedef MapY
-   *  \brief map of Vec2
+   *  \brief map of MWAWVec2
    */
-  typedef std::map<Vec2<T>, T,struct PosSizeLtY> MapY;
+  typedef std::map<MWAWVec2<T>, T,struct PosSizeLtY> MapY;
 protected:
   T m_x/*! \brief first element */, m_y/*! \brief second element */;
 };
 
-/*! \brief Vec2 of bool */
-typedef Vec2<bool> Vec2b;
-/*! \brief Vec2 of int */
-typedef Vec2<int> Vec2i;
-/*! \brief Vec2 of long */
-typedef Vec2<long> Vec2l;
-/*! \brief Vec2 of float */
-typedef Vec2<float> Vec2f;
+/*! \brief MWAWVec2 of bool */
+typedef MWAWVec2<bool> MWAWVec2b;
+/*! \brief MWAWVec2 of int */
+typedef MWAWVec2<int> MWAWVec2i;
+/*! \brief MWAWVec2 of long */
+typedef MWAWVec2<long> MWAWVec2l;
+/*! \brief MWAWVec2 of float */
+typedef MWAWVec2<float> MWAWVec2f;
 
-/*! \class Vec3
+/*! \class MWAWVec3
  *   \brief small class which defines a vector with 3 elements
  */
-template <class T> class Vec3
+template <class T> class MWAWVec3
 {
 public:
   //! constructor
-  Vec3(T xx=0,T yy=0,T zz=0) {
+  MWAWVec3(T xx=0,T yy=0,T zz=0)
+  {
     m_val[0] = xx;
     m_val[1] = yy;
     m_val[2] = zz;
   }
   //! generic copy constructor
-  template <class U> Vec3(Vec3<U> const &p) {
+  template <class U> MWAWVec3(MWAWVec3<U> const &p)
+  {
     for (int c = 0; c < 3; c++) m_val[c] = T(p[c]);
   }
 
   //! first element
-  T x() const {
+  T x() const
+  {
     return m_val[0];
   }
   //! second element
-  T y() const {
+  T y() const
+  {
     return m_val[1];
   }
   //! third element
-  T z() const {
+  T z() const
+  {
     return m_val[2];
   }
   //! operator[]
-  T operator[](int c) const {
-    assert(c >= 0 && c <= 2);
+  T operator[](int c) const
+  {
+    if (c<0 || c>2) throw libmwaw::GenericException();
     return m_val[c];
   }
   //! operator[]
-  T &operator[](int c) {
-    assert(c >= 0 && c <= 2);
+  T &operator[](int c)
+  {
+    if (c<0 || c>2) throw libmwaw::GenericException();
     return m_val[c];
   }
 
   //! resets the three elements
-  void set(T xx, T yy, T zz) {
+  void set(T xx, T yy, T zz)
+  {
     m_val[0] = xx;
     m_val[1] = yy;
     m_val[2] = zz;
   }
   //! resets the first element
-  void setX(T xx) {
+  void setX(T xx)
+  {
     m_val[0] = xx;
   }
   //! resets the second element
-  void setY(T yy) {
+  void setY(T yy)
+  {
     m_val[1] = yy;
   }
   //! resets the third element
-  void setZ(T zz) {
+  void setZ(T zz)
+  {
     m_val[2] = zz;
   }
 
   //! increases the actuals values by \a dx, \a dy, \a dz
-  void add(T dx, T dy, T dz) {
+  void add(T dx, T dy, T dz)
+  {
     m_val[0] += dx;
     m_val[1] += dy;
     m_val[2] += dz;
   }
 
   //! operator+=
-  Vec3<T> &operator+=(Vec3<T> const &p) {
+  MWAWVec3<T> &operator+=(MWAWVec3<T> const &p)
+  {
     for (int c = 0; c < 3; c++) m_val[c] = T(m_val[c]+p.m_val[c]);
     return *this;
   }
   //! operator-=
-  Vec3<T> &operator-=(Vec3<T> const &p) {
+  MWAWVec3<T> &operator-=(MWAWVec3<T> const &p)
+  {
     for (int c = 0; c < 3; c++) m_val[c] = T(m_val[c]-p.m_val[c]);
     return *this;
   }
   //! generic operator*=
   template <class U>
-  Vec3<T> &operator*=(U scale) {
+  MWAWVec3<T> &operator*=(U scale)
+  {
     for (int c = 0; c < 3; c++) m_val[c] = T(m_val[c]*scale);
     return *this;
   }
 
   //! operator+
-  friend Vec3<T> operator+(Vec3<T> const &p1, Vec3<T> const &p2) {
-    Vec3<T> p(p1);
+  friend MWAWVec3<T> operator+(MWAWVec3<T> const &p1, MWAWVec3<T> const &p2)
+  {
+    MWAWVec3<T> p(p1);
     return p+=p2;
   }
   //! operator-
-  friend Vec3<T> operator-(Vec3<T> const &p1, Vec3<T> const &p2) {
-    Vec3<T> p(p1);
+  friend MWAWVec3<T> operator-(MWAWVec3<T> const &p1, MWAWVec3<T> const &p2)
+  {
+    MWAWVec3<T> p(p1);
     return p-=p2;
   }
   //! generic operator*
   template <class U>
-  friend Vec3<T> operator*(U scale, Vec3<T> const &p1) {
-    Vec3<T> p(p1);
+  friend MWAWVec3<T> operator*(U scale, MWAWVec3<T> const &p1)
+  {
+    MWAWVec3<T> p(p1);
     return p *= scale;
   }
 
   //! comparison==
-  bool operator==(Vec3<T> const &p) const {
+  bool operator==(MWAWVec3<T> const &p) const
+  {
     return cmp(p) == 0;
   }
   //! comparison!=
-  bool operator!=(Vec3<T> const &p) const {
+  bool operator!=(MWAWVec3<T> const &p) const
+  {
     return cmp(p) != 0;
   }
   //! comparison<: which first compares x values, then y values then z values.
-  bool operator<(Vec3<T> const &p) const {
+  bool operator<(MWAWVec3<T> const &p) const
+  {
     return cmp(p) < 0;
   }
   //! a comparison function: which first compares x values, then y values then z values.
-  int cmp(Vec3<T> const &p) const {
+  int cmp(MWAWVec3<T> const &p) const
+  {
     for (int c = 0; c < 3; c++) {
       T diff  = m_val[c]-p.m_val[c];
       if (diff) return (diff < 0) ? -1 : 1;
@@ -717,7 +864,8 @@ public:
   }
 
   //! operator<<: prints data in form "XxYxZ"
-  friend std::ostream &operator<< (std::ostream &o, Vec3<T> const &f) {
+  friend std::ostream &operator<< (std::ostream &o, MWAWVec3<T> const &f)
+  {
     o << f.m_val[0] << "x" << f.m_val[1] << "x" << f.m_val[2];
     return o;
   }
@@ -727,150 +875,173 @@ public:
    */
   struct PosSizeLt {
     //! comparaison function
-    bool operator()(Vec3<T> const &s1, Vec3<T> const &s2) const {
+    bool operator()(MWAWVec3<T> const &s1, MWAWVec3<T> const &s2) const
+    {
       return s1.cmp(s2) < 0;
     }
   };
   /*! \typedef Map
-   *  \brief map of Vec3
+   *  \brief map of MWAWVec3
    */
-  typedef std::map<Vec3<T>, T,struct PosSizeLt> Map;
+  typedef std::map<MWAWVec3<T>, T,struct PosSizeLt> Map;
 
 protected:
   //! the values
   T m_val[3];
 };
 
-/*! \brief Vec3 of unsigned char */
-typedef Vec3<unsigned char> Vec3uc;
-/*! \brief Vec3 of int */
-typedef Vec3<int> Vec3i;
-/*! \brief Vec3 of float */
-typedef Vec3<float> Vec3f;
+/*! \brief MWAWVec3 of unsigned char */
+typedef MWAWVec3<unsigned char> MWAWVec3uc;
+/*! \brief MWAWVec3 of int */
+typedef MWAWVec3<int> MWAWVec3i;
+/*! \brief MWAWVec3 of float */
+typedef MWAWVec3<float> MWAWVec3f;
 
-/*! \class Box2
+/*! \class MWAWBox2
  *   \brief small class which defines a 2D Box
  */
-template <class T> class Box2
+template <class T> class MWAWBox2
 {
 public:
   //! constructor
-  Box2(Vec2<T> minPt=Vec2<T>(), Vec2<T> maxPt=Vec2<T>()) {
+  MWAWBox2(MWAWVec2<T> minPt=MWAWVec2<T>(), MWAWVec2<T> maxPt=MWAWVec2<T>())
+  {
     m_pt[0] = minPt;
     m_pt[1] = maxPt;
   }
   //! generic constructor
-  template <class U> Box2(Box2<U> const &p) {
+  template <class U> MWAWBox2(MWAWBox2<U> const &p)
+  {
     for (int c=0; c < 2; c++) m_pt[c] = p[c];
   }
 
   //! the minimum 2D point (in x and in y)
-  Vec2<T> const &min() const {
+  MWAWVec2<T> const &min() const
+  {
     return m_pt[0];
   }
   //! the maximum 2D point (in x and in y)
-  Vec2<T> const &max() const {
+  MWAWVec2<T> const &max() const
+  {
     return m_pt[1];
   }
   //! the minimum 2D point (in x and in y)
-  Vec2<T> &min() {
+  MWAWVec2<T> &min()
+  {
     return m_pt[0];
   }
   //! the maximum 2D point (in x and in y)
-  Vec2<T> &max() {
+  MWAWVec2<T> &max()
+  {
     return m_pt[1];
   }
   /*! \brief the two extremum points which defined the box
-   * \param c value 0 means the minimum
-   * \param c value 1 means the maximum
+   * \param c 0 means the minimum and 1 the maximum
    */
-  Vec2<T> const &operator[](int c) const {
-    assert(c >= 0 && c <= 1);
+  MWAWVec2<T> const &operator[](int c) const
+  {
+    if (c<0 || c>1) throw libmwaw::GenericException();
     return m_pt[c];
   }
   //! the box size
-  Vec2<T> size() const {
+  MWAWVec2<T> size() const
+  {
     return m_pt[1]-m_pt[0];
   }
   //! the box center
-  Vec2<T> center() const {
+  MWAWVec2<T> center() const
+  {
     return 0.5*(m_pt[0]+m_pt[1]);
   }
 
   //! resets the data to minimum \a x and maximum \a y
-  void set(Vec2<T> const &x, Vec2<T> const &y) {
+  void set(MWAWVec2<T> const &x, MWAWVec2<T> const &y)
+  {
     m_pt[0] = x;
     m_pt[1] = y;
   }
   //! resets the minimum point
-  void setMin(Vec2<T> const &x) {
+  void setMin(MWAWVec2<T> const &x)
+  {
     m_pt[0] = x;
   }
   //! resets the maximum point
-  void setMax(Vec2<T> const &y) {
+  void setMax(MWAWVec2<T> const &y)
+  {
     m_pt[1] = y;
   }
 
   //!  resize the box keeping the minimum
-  void resizeFromMin(Vec2<T> const &sz) {
+  void resizeFromMin(MWAWVec2<T> const &sz)
+  {
     m_pt[1] = m_pt[0]+sz;
   }
   //!  resize the box keeping the maximum
-  void resizeFromMax(Vec2<T> const &sz) {
+  void resizeFromMax(MWAWVec2<T> const &sz)
+  {
     m_pt[0] = m_pt[1]-sz;
   }
   //!  resize the box keeping the center
-  void resizeFromCenter(Vec2<T> const &sz) {
-    Vec2<T> centerPt = 0.5*(m_pt[0]+m_pt[1]);
+  void resizeFromCenter(MWAWVec2<T> const &sz)
+  {
+    MWAWVec2<T> centerPt = 0.5*(m_pt[0]+m_pt[1]);
     m_pt[0] = centerPt - 0.5*sz;
     m_pt[1] = centerPt + (sz - 0.5*sz);
   }
 
   //! scales all points of the box by \a factor
-  template <class U> void scale(U factor) {
+  template <class U> void scale(U factor)
+  {
     m_pt[0] *= factor;
     m_pt[1] *= factor;
   }
 
   //! extends the bdbox by (\a val, \a val) keeping the center
-  void extend(T val) {
-    m_pt[0] -= Vec2<T>(val/2,val/2);
-    m_pt[1] += Vec2<T>(val-(val/2),val-(val/2));
+  void extend(T val)
+  {
+    m_pt[0] -= MWAWVec2<T>(val/2,val/2);
+    m_pt[1] += MWAWVec2<T>(val-(val/2),val-(val/2));
   }
 
   //! returns the union between this and box
-  Box2<T> getUnion(Box2<T> const &box) const {
-    Box2<T> res;
-    res.m_pt[0]=Vec2<T>(m_pt[0][0]<box.m_pt[0][0]?m_pt[0][0] : box.m_pt[0][0],
-                        m_pt[0][1]<box.m_pt[0][1]?m_pt[0][1] : box.m_pt[0][1]);
-    res.m_pt[1]=Vec2<T>(m_pt[1][0]>box.m_pt[1][0]?m_pt[1][0] : box.m_pt[1][0],
-                        m_pt[1][1]>box.m_pt[1][1]?m_pt[1][1] : box.m_pt[1][1]);
+  MWAWBox2<T> getUnion(MWAWBox2<T> const &box) const
+  {
+    MWAWBox2<T> res;
+    res.m_pt[0]=MWAWVec2<T>(m_pt[0][0]<box.m_pt[0][0]?m_pt[0][0] : box.m_pt[0][0],
+                            m_pt[0][1]<box.m_pt[0][1]?m_pt[0][1] : box.m_pt[0][1]);
+    res.m_pt[1]=MWAWVec2<T>(m_pt[1][0]>box.m_pt[1][0]?m_pt[1][0] : box.m_pt[1][0],
+                            m_pt[1][1]>box.m_pt[1][1]?m_pt[1][1] : box.m_pt[1][1]);
     return res;
   }
   //! returns the intersection between this and box
-  Box2<T> getIntersection(Box2<T> const &box) const {
-    Box2<T> res;
-    res.m_pt[0]=Vec2<T>(m_pt[0][0]>box.m_pt[0][0]?m_pt[0][0] : box.m_pt[0][0],
-                        m_pt[0][1]>box.m_pt[0][1]?m_pt[0][1] : box.m_pt[0][1]);
-    res.m_pt[1]=Vec2<T>(m_pt[1][0]<box.m_pt[1][0]?m_pt[1][0] : box.m_pt[1][0],
-                        m_pt[1][1]<box.m_pt[1][1]?m_pt[1][1] : box.m_pt[1][1]);
+  MWAWBox2<T> getIntersection(MWAWBox2<T> const &box) const
+  {
+    MWAWBox2<T> res;
+    res.m_pt[0]=MWAWVec2<T>(m_pt[0][0]>box.m_pt[0][0]?m_pt[0][0] : box.m_pt[0][0],
+                            m_pt[0][1]>box.m_pt[0][1]?m_pt[0][1] : box.m_pt[0][1]);
+    res.m_pt[1]=MWAWVec2<T>(m_pt[1][0]<box.m_pt[1][0]?m_pt[1][0] : box.m_pt[1][0],
+                            m_pt[1][1]<box.m_pt[1][1]?m_pt[1][1] : box.m_pt[1][1]);
     return res;
   }
   //! comparison operator==
-  bool operator==(Box2<T> const &p) const {
+  bool operator==(MWAWBox2<T> const &p) const
+  {
     return cmp(p) == 0;
   }
   //! comparison operator!=
-  bool operator!=(Box2<T> const &p) const {
+  bool operator!=(MWAWBox2<T> const &p) const
+  {
     return cmp(p) != 0;
   }
   //! comparison operator< : fist sorts min by Y,X values then max extremity
-  bool operator<(Box2<T> const &p) const {
+  bool operator<(MWAWBox2<T> const &p) const
+  {
     return cmp(p) < 0;
   }
 
   //! comparison function : fist sorts min by Y,X values then max extremity
-  int cmp(Box2<T> const &p) const {
+  int cmp(MWAWBox2<T> const &p) const
+  {
     int diff  = m_pt[0].cmpY(p.m_pt[0]);
     if (diff) return diff;
     diff  = m_pt[1].cmpY(p.m_pt[1]);
@@ -879,7 +1050,8 @@ public:
   }
 
   //! print data in form X0xY0<->X1xY1
-  friend std::ostream &operator<< (std::ostream &o, Box2<T> const &f) {
+  friend std::ostream &operator<< (std::ostream &o, MWAWBox2<T> const &f)
+  {
     o << "(" << f.m_pt[0] << "<->" << f.m_pt[1] << ")";
     return o;
   }
@@ -889,32 +1061,33 @@ public:
    */
   struct PosSizeLt {
     //! comparaison function
-    bool operator()(Box2<T> const &s1, Box2<T> const &s2) const {
+    bool operator()(MWAWBox2<T> const &s1, MWAWBox2<T> const &s2) const
+    {
       return s1.cmp(s2) < 0;
     }
   };
   /*! \typedef Map
-   *  \brief map of Box2
+   *  \brief map of MWAWBox2
    */
-  typedef std::map<Box2<T>, T,struct PosSizeLt> Map;
+  typedef std::map<MWAWBox2<T>, T,struct PosSizeLt> Map;
 
 protected:
   //! the two extremities
-  Vec2<T> m_pt[2];
+  MWAWVec2<T> m_pt[2];
 };
 
-/*! \brief Box2 of int */
-typedef Box2<int> Box2i;
-/*! \brief Box2 of float */
-typedef Box2<float> Box2f;
-/*! \brief Box2 of long */
-typedef Box2<long> Box2l;
+/*! \brief MWAWBox2 of int */
+typedef MWAWBox2<int> MWAWBox2i;
+/*! \brief MWAWBox2 of float */
+typedef MWAWBox2<float> MWAWBox2f;
+/*! \brief MWAWBox2 of long */
+typedef MWAWBox2<long> MWAWBox2l;
 
 // some geometrical function
 namespace libmwaw
 {
 //! rotate a bdox and returns the final bdbox
-Box2f rotateBoxFromCenter(Box2f const &box, float angle);
+MWAWBox2f rotateBoxFromCenter(MWAWBox2f const &box, float angle);
 }
 #endif /* LIBMWAW_INTERNAL_H */
 // vim: set filetype=cpp tabstop=2 shiftwidth=2 cindent autoindent smartindent noexpandtab:

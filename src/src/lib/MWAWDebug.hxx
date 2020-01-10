@@ -38,11 +38,10 @@
 
 #include "MWAWInputStream.hxx"
 
-class WPXBinaryData;
-
 #  if defined(DEBUG_WITH_FILES)
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <vector>
 //! some  basic tools
 namespace libmwaw
@@ -53,7 +52,7 @@ namespace Debug
 //! a debug function to store in a datafile in the current directory
 //! WARNING: this function erase the file fileName if it exists
 //! (if debug_with_files is not defined, does nothing)
-bool dumpFile(WPXBinaryData &data, char const *fileName);
+bool dumpFile(librevenge::RVNGBinaryData &data, char const *fileName);
 //! returns a file name from an ole/... name
 std::string flattenFileName(std::string const &name);
 }
@@ -68,21 +67,25 @@ class DebugFile
 public:
   //! constructor given the input file
   DebugFile(MWAWInputStreamPtr ip=MWAWInputStreamPtr())
-    : m_file(), m_on(false), m_input(ip), m_actOffset(-1), m_notes(), m_skipZones() { }
+    : m_fileName(""), m_file(), m_on(false), m_input(ip), m_actOffset(-1), m_notes(), m_skipZones() { }
 
   //! resets the input
-  void setStream(MWAWInputStreamPtr ip) {
+  void setStream(MWAWInputStreamPtr ip)
+  {
     m_input = ip;
   }
   //! destructor
-  ~DebugFile() {
+  ~DebugFile()
+  {
     reset();
   }
   //! opens/creates a file to store a result
   bool open(std::string const &filename);
   //! writes the current file and reset to zero
-  void reset() {
+  void reset()
+  {
     write();
+    m_fileName="";
     m_file.close();
     m_on = false;
     m_notes.resize(0);
@@ -99,14 +102,17 @@ public:
   void addDelimiter(long pos, char c);
 
   //! skips the file zone defined by beginPos-endPos
-  void skipZone(long beginPos, long endPos) {
-    if (m_on) m_skipZones.push_back(Vec2<long>(beginPos, endPos));
+  void skipZone(long beginPos, long endPos)
+  {
+    if (m_on) m_skipZones.push_back(MWAWVec2<long>(beginPos, endPos));
   }
 
 protected:
   //! sorts the position/note date
   void sort();
 
+  //! the file name
+  mutable std::string m_fileName;
   //! a stream which is open to write the file
   mutable std::ofstream m_file;
   //! a flag to know if the result stream is open or note
@@ -130,7 +136,8 @@ protected:
     bool m_breaking;
 
     //! comparison operator based on the position
-    bool operator<(NotePos const &p) const {
+    bool operator<(NotePos const &p) const
+    {
       long diff = m_pos-p.m_pos;
       if (diff) return (diff < 0) ? true : false;
       if (m_breaking != p.m_breaking) return m_breaking;
@@ -141,7 +148,8 @@ protected:
      */
     struct NotePosLt {
       //! comparison operator
-      bool operator()(NotePos const &s1, NotePos const &s2) const {
+      bool operator()(NotePos const &s1, NotePos const &s2) const
+      {
         return s1 < s2;
       }
     };
@@ -152,7 +160,7 @@ protected:
   //! list of notes
   std::vector<NotePos> m_notes;
   //! list of skipZone
-  std::vector<Vec2<long> > m_skipZones;
+  std::vector<MWAWVec2<long> > m_skipZones;
 };
 }
 #  else
@@ -160,7 +168,7 @@ namespace libmwaw
 {
 namespace Debug
 {
-inline bool dumpFile(WPXBinaryData &, char const *)
+inline bool dumpFile(librevenge::RVNGBinaryData &, char const *)
 {
   return true;
 }
@@ -175,11 +183,13 @@ class DebugStream
 {
 public:
   template <class T>
-  DebugStream &operator<<(T const &) {
+  DebugStream &operator<<(T const &)
+  {
     return *this;
   }
 
-  static std::string str() {
+  static std::string str()
+  {
     return std::string("");
   }
   static void str(std::string const &) { }
@@ -193,18 +203,19 @@ public:
   static void setStream(MWAWInputStreamPtr) {  }
   ~DebugFile() { }
 
-  static bool open(std::string const &) {
+  static bool open(std::string const &)
+  {
     return true;
   }
 
-  static void addPos(long ) {}
+  static void addPos(long) {}
   static void addNote(char const *) {}
   static void addDelimiter(long, char) {}
 
   static void write() {}
   static void reset() { }
 
-  static void skipZone(long , long ) {}
+  static void skipZone(long , long) {}
 };
 }
 #  endif

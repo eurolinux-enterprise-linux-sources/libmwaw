@@ -40,7 +40,7 @@
 #include <sstream>
 #include <string>
 
-#include <libwpd/libwpd.h>
+#include <librevenge/librevenge.h>
 #include <libmwaw/libmwaw.hxx>
 
 #include "libmwaw_internal.hxx"
@@ -95,7 +95,7 @@ bool MWAWGraphicStyle::Pattern::getAverageColor(MWAWColor &color) const
   return true;
 }
 
-bool MWAWGraphicStyle::Pattern::getBinary(WPXBinaryData &data, std::string &type) const
+bool MWAWGraphicStyle::Pattern::getBinary(librevenge::RVNGBinaryData &data, std::string &type) const
 {
   if (empty()) {
     MWAW_DEBUG_MSG(("MWAWGraphicStyle::Pattern::getBinary: called on invalid pattern\n"));
@@ -125,7 +125,7 @@ bool MWAWGraphicStyle::Pattern::getBinary(WPXBinaryData &data, std::string &type
       unsigned char depl=0x80;
       for (int byt=0; byt<8; ++byt) {
         rowValues[i++] = (c&depl) ? 1 : 0;
-        depl=(unsigned char) (depl>>1);
+        depl=(unsigned char)(depl>>1);
       }
     }
     bitmap.setRow(h, &rowValues[0]);
@@ -136,15 +136,33 @@ bool MWAWGraphicStyle::Pattern::getBinary(WPXBinaryData &data, std::string &type
 ////////////////////////////////////////////////////////////
 // style
 ////////////////////////////////////////////////////////////
-void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradient, bool only1D) const
+void MWAWGraphicStyle::setBorders(int wh, MWAWBorder const &border)
 {
-  list.clear();
+  int const allBits = libmwaw::LeftBit|libmwaw::RightBit|libmwaw::TopBit|libmwaw::BottomBit;
+  if (wh & (~allBits)) {
+    MWAW_DEBUG_MSG(("MWAWGraphicStyle::setBorders: unknown borders\n"));
+    return;
+  }
+  size_t numData = 4;
+  if (m_bordersList.size() < numData) {
+    MWAWBorder emptyBorder;
+    emptyBorder.m_style = MWAWBorder::None;
+    m_bordersList.resize(numData, emptyBorder);
+  }
+  if (wh & libmwaw::LeftBit) m_bordersList[libmwaw::Left] = border;
+  if (wh & libmwaw::RightBit) m_bordersList[libmwaw::Right] = border;
+  if (wh & libmwaw::TopBit) m_bordersList[libmwaw::Top] = border;
+  if (wh & libmwaw::BottomBit) m_bordersList[libmwaw::Bottom] = border;
+}
+
+void MWAWGraphicStyle::addTo(librevenge::RVNGPropertyList &list, bool only1D) const
+{
   if (!hasLine())
     list.insert("draw:stroke", "none");
   else if (m_lineDashWidth.size()>=2) {
     int nDots1=0, nDots2=0;
     float size1=0, size2=0, totalGap=0.0;
-    for (size_t c=0; c+1 < m_lineDashWidth.size(); ) {
+    for (size_t c=0; c+1 < m_lineDashWidth.size();) {
       float sz=m_lineDashWidth[c++];
       if (nDots2 && (sz<size2||sz>size2)) {
         static bool first=true;
@@ -159,7 +177,8 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
       else if (!nDots1 || (sz>=size1 && sz <= size1)) {
         nDots1++;
         size1=sz;
-      } else {
+      }
+      else {
         nDots2=1;
         size2=sz;
       }
@@ -167,20 +186,22 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
     }
     list.insert("draw:stroke", "dash");
     list.insert("draw:dots1", nDots1);
-    list.insert("draw:dots1-length", size1, WPX_POINT);
+    list.insert("draw:dots1-length", size1, librevenge::RVNG_POINT);
     if (nDots2) {
       list.insert("draw:dots2", nDots2);
-      list.insert("draw:dots2-length", size2, WPX_POINT);
+      list.insert("draw:dots2-length", size2, librevenge::RVNG_POINT);
     }
-    list.insert("draw:distance", totalGap/float(nDots1+nDots2), WPX_POINT);;
-  } else
+    const double distance = ((nDots1 + nDots2) > 0) ? totalGap/float(nDots1+nDots2) : totalGap;
+    list.insert("draw:distance", distance, librevenge::RVNG_POINT);;
+  }
+  else
     list.insert("draw:stroke", "solid");
   list.insert("svg:stroke-color", m_lineColor.str().c_str());
-  list.insert("svg:stroke-width", m_lineWidth,WPX_POINT);
+  list.insert("svg:stroke-width", m_lineWidth,librevenge::RVNG_POINT);
 
   if (m_lineOpacity < 1)
-    list.insert("svg:stroke-opacity", m_lineOpacity, WPX_PERCENT);
-  switch(m_lineCap) {
+    list.insert("svg:stroke-opacity", m_lineOpacity, librevenge::RVNG_PERCENT);
+  switch (m_lineCap) {
   case C_Round:
     list.insert("svg:stroke-linecap", "round");
     break;
@@ -191,7 +212,7 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
   default:
     break;
   }
-  switch(m_lineJoin) {
+  switch (m_lineJoin) {
   case J_Round:
     list.insert("svg:stroke-linejoin", "round");
     break;
@@ -214,7 +235,14 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
     list.insert("draw:marker-end-center", "false");
     list.insert("draw:marker-end-width", "5pt");
   }
-
+  if (hasShadow()) {
+    list.insert("draw:shadow", "visible");
+    list.insert("draw:shadow-color", m_shadowColor.str().c_str());
+    list.insert("draw:shadow-opacity", m_shadowOpacity, librevenge::RVNG_PERCENT);
+    // in cm
+    list.insert("draw:shadow-offset-x", double(m_shadowOffset[0])/72.*2.54, librevenge::RVNG_GENERIC); // cm
+    list.insert("draw:shadow-offset-y", double(m_shadowOffset[1])/72.*2.54, librevenge::RVNG_GENERIC); // cm
+  }
   if (only1D || !hasSurface()) {
     list.insert("draw:fill", "none");
     return;
@@ -248,27 +276,31 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
         m_gradientStopList[1].m_offset >=1) {
       size_t first=(m_gradientType==G_Linear || m_gradientType==G_Axial) ? 0 : 1;
       list.insert("draw:start-color", m_gradientStopList[first].m_color.str().c_str());
-      list.insert("libwpg:start-opacity", m_gradientStopList[first].m_opacity, WPX_PERCENT);
+      list.insert("librevenge:start-opacity", m_gradientStopList[first].m_opacity, librevenge::RVNG_PERCENT);
       list.insert("draw:end-color", m_gradientStopList[1-first].m_color.str().c_str());
-      list.insert("libwpg:end-opacity", m_gradientStopList[1-first].m_opacity, WPX_PERCENT);
-    } else {
+      list.insert("librevenge:end-opacity", m_gradientStopList[1-first].m_opacity, librevenge::RVNG_PERCENT);
+    }
+    else {
+      librevenge::RVNGPropertyListVector gradient;
       for (size_t s=0; s < m_gradientStopList.size(); ++s) {
-        WPXPropertyList grad;
-        grad.insert("svg:offset", m_gradientStopList[s].m_offset, WPX_PERCENT);
+        librevenge::RVNGPropertyList grad;
+        grad.insert("svg:offset", m_gradientStopList[s].m_offset, librevenge::RVNG_PERCENT);
         grad.insert("svg:stop-color", m_gradientStopList[s].m_color.str().c_str());
-        grad.insert("svg:stop-opacity", m_gradientStopList[s].m_opacity, WPX_PERCENT);
+        grad.insert("svg:stop-opacity", m_gradientStopList[s].m_opacity, librevenge::RVNG_PERCENT);
         gradient.append(grad);
       }
+      list.insert("svg:linearGradient", gradient);
     }
-    list.insert("draw:angle", m_gradientAngle);
-    list.insert("draw:border", m_gradientBorder, WPX_PERCENT);
+    list.insert("draw:angle", m_gradientAngle, librevenge::RVNG_GENERIC);
+    list.insert("draw:border", m_gradientBorder, librevenge::RVNG_PERCENT);
     if (m_gradientType != G_Linear) {
-      list.insert("svg:cx", m_gradientPercentCenter[0], WPX_PERCENT);
-      list.insert("svg:cy", m_gradientPercentCenter[1], WPX_PERCENT);
+      list.insert("svg:cx", m_gradientPercentCenter[0], librevenge::RVNG_PERCENT);
+      list.insert("svg:cy", m_gradientPercentCenter[1], librevenge::RVNG_PERCENT);
     }
     if (m_gradientType == G_Radial)
-      list.insert("svg:r", m_gradientRadius, WPX_PERCENT); // checkme
-  } else {
+      list.insert("svg:r", m_gradientRadius, librevenge::RVNG_PERCENT); // checkme
+  }
+  else {
     bool done = false;
     MWAWColor surfaceColor=m_surfaceColor;
     float surfaceOpacity = m_surfaceOpacity;
@@ -278,17 +310,18 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
         // no need to create a uniform pattern
         surfaceColor = col;
         surfaceOpacity = 1;
-      } else {
-        WPXBinaryData data;
+      }
+      else {
+        librevenge::RVNGBinaryData data;
         std::string mimeType;
         if (m_pattern.getBinary(data, mimeType)) {
           list.insert("draw:fill", "bitmap");
           list.insert("draw:fill-image", data.getBase64Data());
-          list.insert("draw:fill-image-width", m_pattern.m_dim[0], WPX_POINT);
-          list.insert("draw:fill-image-height", m_pattern.m_dim[1], WPX_POINT);
-          list.insert("draw:fill-image-ref-point-x",0, WPX_POINT);
-          list.insert("draw:fill-image-ref-point-y",0, WPX_POINT);
-          list.insert("libwpg:mime-type", mimeType.c_str());
+          list.insert("draw:fill-image-width", m_pattern.m_dim[0], librevenge::RVNG_POINT);
+          list.insert("draw:fill-image-height", m_pattern.m_dim[1], librevenge::RVNG_POINT);
+          list.insert("draw:fill-image-ref-point-x",0, librevenge::RVNG_POINT);
+          list.insert("draw:fill-image-ref-point-y",0, librevenge::RVNG_POINT);
+          list.insert("librevenge:mime-type", mimeType.c_str());
           done = true;
         }
       }
@@ -296,17 +329,55 @@ void MWAWGraphicStyle::addTo(WPXPropertyList &list, WPXPropertyListVector &gradi
     if (!done) {
       list.insert("draw:fill", "solid");
       list.insert("draw:fill-color", surfaceColor.str().c_str());
-      list.insert("draw:opacity", surfaceOpacity, WPX_PERCENT);
+      list.insert("draw:opacity", surfaceOpacity, librevenge::RVNG_PERCENT);
+    }
+  }
+}
+
+void MWAWGraphicStyle::addFrameTo(librevenge::RVNGPropertyList &list) const
+{
+  if (m_backgroundOpacity>=0) {
+    if (m_backgroundOpacity>0)
+      list.insert("fo:background-color", m_backgroundColor.str().c_str());
+    if (m_backgroundOpacity<1)
+      list.insert("style:background-transparency", 1.-m_backgroundOpacity, librevenge::RVNG_PERCENT);
+  }
+  if (hasBorders()) {
+    if (hasSameBorders())
+      m_bordersList[0].addTo(list, "");
+    else {
+      for (size_t c = 0; c < m_bordersList.size(); c++) {
+        if (c >= 4) break;
+        switch (c) {
+        case libmwaw::Left:
+          m_bordersList[c].addTo(list, "left");
+          break;
+        case libmwaw::Right:
+          m_bordersList[c].addTo(list, "right");
+          break;
+        case libmwaw::Top:
+          m_bordersList[c].addTo(list, "top");
+          break;
+        case libmwaw::Bottom:
+          m_bordersList[c].addTo(list, "bottom");
+          break;
+        default:
+          MWAW_DEBUG_MSG(("MWAWGraphicStyle::addFrameTo: can not send %d border\n",int(c)));
+          break;
+        }
+      }
     }
   }
   if (hasShadow()) {
-    list.insert("draw:shadow", "vsible");
+    list.insert("draw:shadow", "visible");
     list.insert("draw:shadow-color", m_shadowColor.str().c_str());
-    list.insert("draw:shadow-opacity", m_shadowOpacity, WPX_PERCENT);
+    list.insert("draw:shadow-opacity", m_shadowOpacity, librevenge::RVNG_PERCENT);
     // in cm
-    list.insert("draw:shadow-offset-x", double(m_shadowOffset[0])/72.*2.54);
-    list.insert("draw:shadow-offset-y", double(m_shadowOffset[1])/72.*2.54);
+    list.insert("draw:shadow-offset-x", double(m_shadowOffset[0])/72.*2.54, librevenge::RVNG_GENERIC); // cm
+    list.insert("draw:shadow-offset-y", double(m_shadowOffset[1])/72.*2.54, librevenge::RVNG_GENERIC); // cm
   }
+  if (!m_frameName.empty())
+    list.insert("librevenge:frame-name",m_frameName.c_str());
 }
 
 int MWAWGraphicStyle::cmp(MWAWGraphicStyle const &a) const
@@ -366,6 +437,26 @@ int MWAWGraphicStyle::cmp(MWAWGraphicStyle const &a) const
   if (m_gradientBorder > a.m_gradientBorder) return 1;
   diff=m_gradientPercentCenter.cmp(a.m_gradientPercentCenter);
   if (diff) return diff;
+
+  size_t numBorders=m_bordersList.size();
+  if (a.m_bordersList.size()>numBorders)
+    numBorders=a.m_bordersList.size();
+  for (size_t b=0; b<numBorders; ++b) {
+    bool empty=b>=m_bordersList.size() || m_bordersList[b].isEmpty();
+    bool aEmpty=b>=a.m_bordersList.size() || a.m_bordersList[b].isEmpty();
+    if (empty!=aEmpty) return empty ? 1 : -1;
+    diff=m_bordersList[b].compare(a.m_bordersList[b]);
+    if (diff) return diff;
+  }
+  if (m_backgroundColor < a.m_backgroundColor) return -1;
+  if (m_backgroundColor > a.m_backgroundColor) return 1;
+  if (m_backgroundOpacity < a.m_backgroundOpacity) return -1;
+  if (m_backgroundOpacity > a.m_backgroundOpacity) return 1;
+  if (m_frameName < a.m_frameName) return -1;
+  if (m_frameName > a.m_frameName) return 1;
+  if (m_frameNextName < a.m_frameNextName) return -1;
+  if (m_frameNextName > a.m_frameNextName) return 1;
+
   if (m_gradientRadius < a.m_gradientRadius) return -1;
   if (m_gradientRadius > a.m_gradientRadius) return 1;
   if (m_rotate < a.m_rotate) return -1;
@@ -462,7 +553,7 @@ std::ostream &operator<<(std::ostream &o, MWAWGraphicStyle const &st)
       o << "],";
     }
     if (st.m_gradientBorder>0) o << "border=" << st.m_gradientBorder*100 << "%,";
-    if (st.m_gradientPercentCenter != Vec2f(0.5f,0.5f)) o << "center=" << st.m_gradientPercentCenter << ",";
+    if (st.m_gradientPercentCenter != MWAWVec2f(0.5f,0.5f)) o << "center=" << st.m_gradientPercentCenter << ",";
     if (st.m_gradientRadius<1) o << "radius=" << st.m_gradientRadius << ",";
     o << "],";
   }
@@ -475,6 +566,27 @@ std::ostream &operator<<(std::ostream &o, MWAWGraphicStyle const &st)
     o << "offset=" << st.m_shadowOffset << ",";
     o << "],";
   }
+  if (st.hasBorders()) {
+    for (size_t i = 0; i < st.m_bordersList.size(); i++) {
+      if (st.m_bordersList[i].m_style == MWAWBorder::None)
+        continue;
+      o << "bord";
+      if (i < 4) {
+        static char const *wh[] = { "L", "R", "T", "B"};
+        o << wh[i];
+      }
+      else o << "[#wh=" << i << "]";
+      o << "=" << st.m_bordersList[i] << ",";
+    }
+  }
+  if (!st.m_backgroundColor.isWhite())
+    o << "background[color]=" << st.m_backgroundColor << ",";
+  if (st.m_backgroundOpacity>=0)
+    o << "background[opacity]=" << 100.f *st.m_backgroundOpacity << "%,";
+  if (!st.m_frameName.empty())
+    o << "frame[name]=" << st.m_frameName << ",";
+  if (!st.m_frameNextName.empty())
+    o << "frame[linkedto]=" << st.m_frameNextName << ",";
   o << st.m_extra;
   return o;
 }

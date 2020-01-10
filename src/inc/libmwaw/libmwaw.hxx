@@ -44,10 +44,11 @@ documentation.
 
 \section api_docs libmwaw API documentation
 
-The external libmwaw API is provided by libmwaw.hxx and the MWAWDocument class. This
-class, combined with the libwpd's WPXDocumentInterface class and libwpg's
-WPGPaintInterface are the only three classes that will be of
-interest for the application programmer using libmwaw.
+The external libmwaw API is provided by libmwaw.hxx and the
+MWAWDocument class. This class, combined with the librevenge's
+librevenge::RVNGDrawingInterface, librevenge::RVNGSpreadsheetInterface
+and librevenge::RVNGTextInterface classes are the only three classes
+that will be of interest for the application programmer using libmwaw.
 
 
 \section lib_docs libmwaw documentation
@@ -58,8 +59,8 @@ the full 100%.
 
 \warning When compiled with -DDEBUG_WITH__FILES, code is added to
 store the results of the parsing in different files: one file by Ole
-parts ( or sometimes to reconstruct a part of file which is stored
-discontinuously ) and some files to store the read pictures. These
+parts (or sometimes to reconstruct a part of file which is stored
+discontinuously) and some files to store the read pictures. These
 files are created in the current repository, therefore it is
 recommended to launch the tests in a empty repository...
 */
@@ -71,16 +72,28 @@ recommended to launch the tests in a empty repository...
 /** Defines the database possible conversion (actually none) */
 #define MWAW_DATABASE_VERSION 0
 /** Defines the vector graphic possible conversion:
-    - 1: can create some graphic shapes in a WPXBinaryDate mimeType="image/mwaw-odg". You can use MWAWDocument::decodeGraphic to read them. */
-#define MWAW_GRAPHIC_VERSION 1
+    - 1: can create some graphic shapes in a RVNGBinaryData
+      mimeType="image/mwaw-odg". You can use
+      MWAWDocument::decodeGraphic to read them(from libmwaw-0.2).
+    - 2: can also create graphic documents(from libmwaw-0.3.0)
+*/
+#define MWAW_GRAPHIC_VERSION 2
 /** Defines the bitmap graphic possible conversion (actually none) */
 #define MWAW_PAINT_VERSION 0
-/** Defines the presentation possible conversion (actually none) */
-#define MWAW_PRESENTATION_VERSION 0
-/** Defines the spreadsheet possible conversion (actually none) */
-#define MWAW_SPREADSHEET_VERSION 0
+/** Defines the presentation possible conversion:
+    - 1: can create some presentation documents(from libmwaw-0.3.3)
+ */
+#define MWAW_PRESENTATION_VERSION 1
+/** Defines the spreadsheet possible conversion:
+    - 1: can create some spreadsheet document(from libmwaw-0.3.0)
+    - 2: can create some spreadsheet shapes in a RVNGBinaryData
+      mimeType="image/mwaw-ods". You can use
+      MWAWDocument::decodeSpreasheet to read them(from libmwaw-0.3.1).
+*/
+#define MWAW_SPREADSHEET_VERSION 2
 /** Defines the word processing possible conversion:
-    - 2: new interface with password encryption + API enums more meaningfull. */
+    - 1: can create some text document(from libmwaw-0.0)
+    - 2: new interface with password encryption(from libmwaw-0.3.0) */
 #define MWAW_TEXT_VERSION 2
 
 #include "MWAWDocument.hxx"

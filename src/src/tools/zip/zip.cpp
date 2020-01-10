@@ -36,9 +36,9 @@
 #include <fstream>
 #include <iostream>
 
-#include <libmwaw_internal.hxx>
 #include "input.h"
 #include "zip.h"
+#include "zip_internal.h"
 
 namespace libmwaw_zip
 {
@@ -57,8 +57,8 @@ static void writeU32(char *ptr, uint32_t data)
 
 static void writeTimeDate(char *ptr)
 {
-  time_t now = time ( 0L );
-  struct tm timeinfo = *(localtime ( &now));
+  time_t now = time(0L);
+  struct tm timeinfo = *(localtime(&now));
   uint16_t time=uint16_t((timeinfo.tm_hour<<11)|(timeinfo.tm_min<<5));
   uint16_t date=uint16_t((timeinfo.tm_mon<<5)|timeinfo.tm_mday);
   int year = 1900+timeinfo.tm_year;
@@ -321,7 +321,7 @@ bool Zip::add(shared_ptr<InputStream> input, char const *base, char const *path)
     if (dir[c]=='\\')
       dir[c]='/';
   }
-  if (!len || path[len-1]!='/')
+  if (!len || (path && path[len-1]!='/'))
     dir += '/';
 
   if (m_nameDirectoryMap.find(dir)==m_nameDirectoryMap.end())

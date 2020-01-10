@@ -31,34 +31,40 @@
 * instead of those above.
 */
 
-#include "MWAWContentListener.hxx"
 #include "MWAWFontConverter.hxx"
 #include "MWAWGraphicListener.hxx"
 #include "MWAWGraphicStyle.hxx"
 #include "MWAWList.hxx"
+#include "MWAWPresentationListener.hxx"
+#include "MWAWSpreadsheetListener.hxx"
+#include "MWAWTextListener.hxx"
 
 #include "MWAWParser.hxx"
 
-MWAWParserState::MWAWParserState(MWAWInputStreamPtr input, MWAWRSRCParserPtr rsrcParser, MWAWHeader *header) :
-  m_version(0), m_input(input), m_header(header),
-  m_rsrcParser(rsrcParser), m_fontConverter(), m_graphicListener(), m_listManager(), m_listener(), m_asciiFile(input)
+MWAWParserState::MWAWParserState(MWAWParserState::Type type, MWAWInputStreamPtr input, MWAWRSRCParserPtr rsrcParser, MWAWHeader *header) :
+  m_type(type), m_kind(MWAWDocument::MWAW_K_TEXT), m_version(0), m_input(input), m_header(header),
+  m_rsrcParser(rsrcParser), m_pageSpan(), m_fontConverter(),
+  m_graphicListener(), m_listManager(), m_presentationListener(), m_spreadsheetListener(), m_textListener(), m_asciiFile(input)
 {
-  if (header) m_version=header->getMajorVersion();
+  if (header) {
+    m_version=header->getMajorVersion();
+    m_kind=header->getKind();
+  }
   m_fontConverter.reset(new MWAWFontConverter);
   m_listManager.reset(new MWAWListManager);
-  m_graphicListener.reset(new MWAWGraphicListener(*this));
 }
 
 MWAWParserState::~MWAWParserState()
 {
-  if (m_listener.get()) try {
+  if (getMainListener()) try {
       /* must never happen, only sanity check....
 
-      Ie. the parser which creates a listener, must delete it.
-      */
+            Ie. the parser which creates a listener, must delete it.
+            */
       MWAW_DEBUG_MSG(("MWAWParserState::~MWAWParserState: the listener is NOT closed, call enddocument without any subdoc\n"));
-      m_listener->endDocument(false);
-    } catch (const libmwaw::ParseException &) {
+      getMainListener()->endDocument(false);
+    }
+    catch (const libmwaw::ParseException &) {
       MWAW_DEBUG_MSG(("MWAWParserState::~MWAWParserState: endDocument FAILS\n"));
       /* must never happen too...
 
@@ -68,30 +74,85 @@ MWAWParserState::~MWAWParserState()
     }
 }
 
-MWAWParser::MWAWParser(MWAWInputStreamPtr input, MWAWRSRCParserPtr rsrcParser, MWAWHeader *header):
-  m_parserState(), m_pageSpan(), m_asciiName("")
+MWAWListenerPtr MWAWParserState::getMainListener()
 {
-  m_parserState.reset(new MWAWParserState(input, rsrcParser, header));
+  switch (m_type) {
+  case Graphic:
+    return m_graphicListener;
+  case Presentation:
+    return m_presentationListener;
+  case Spreadsheet:
+    return m_spreadsheetListener;
+  case Text:
+    return m_textListener;
+  default:
+    MWAW_DEBUG_MSG(("MWAWParserState:::getMainListener unexpected document type\n"));
+  }
+  return MWAWListenerPtr();
+}
+
+MWAWParser::MWAWParser(MWAWParserState::Type type, MWAWInputStreamPtr input, MWAWRSRCParserPtr rsrcParser, MWAWHeader *header):
+  m_parserState(), m_asciiName("")
+{
+  m_parserState.reset(new MWAWParserState(type, input, rsrcParser, header));
 }
 
 MWAWParser::~MWAWParser()
 {
 }
 
-void MWAWParser::setListener(MWAWContentListenerPtr &listener)
-{
-  m_parserState->m_listener=listener;
-}
-
-void MWAWParser::resetListener()
-{
-  if (getListener()) getListener()->endDocument();
-  m_parserState->m_listener.reset();
-}
-
 void MWAWParser::setFontConverter(MWAWFontConverterPtr fontConverter)
 {
   m_parserState->m_fontConverter=fontConverter;
+}
+
+MWAWListenerPtr MWAWParser::getMainListener()
+{
+  return m_parserState->getMainListener();
+}
+
+void MWAWParser::setGraphicListener(MWAWGraphicListenerPtr &listener)
+{
+  m_parserState->m_graphicListener=listener;
+}
+
+void MWAWParser::resetGraphicListener()
+{
+  if (getGraphicListener()) getGraphicListener()->endDocument();
+  m_parserState->m_graphicListener.reset();
+}
+
+void MWAWParser::setPresentationListener(MWAWPresentationListenerPtr &listener)
+{
+  m_parserState->m_presentationListener=listener;
+}
+
+void MWAWParser::resetPresentationListener()
+{
+  if (getPresentationListener()) getPresentationListener()->endDocument();
+  m_parserState->m_presentationListener.reset();
+}
+
+void MWAWParser::setSpreadsheetListener(MWAWSpreadsheetListenerPtr &listener)
+{
+  m_parserState->m_spreadsheetListener=listener;
+}
+
+void MWAWParser::resetSpreadsheetListener()
+{
+  if (getSpreadsheetListener()) getSpreadsheetListener()->endDocument();
+  m_parserState->m_spreadsheetListener.reset();
+}
+
+void MWAWParser::setTextListener(MWAWTextListenerPtr &listener)
+{
+  m_parserState->m_textListener=listener;
+}
+
+void MWAWParser::resetTextListener()
+{
+  if (getTextListener()) getTextListener()->endDocument();
+  m_parserState->m_textListener.reset();
 }
 
 // vim: set filetype=cpp tabstop=2 shiftwidth=2 cindent autoindent smartindent noexpandtab:

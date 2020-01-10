@@ -42,31 +42,45 @@
 #include <string>
 #include <vector>
 
-#include <libmwaw_internal.hxx>
 #include "input.h"
 #include "xattr.h"
 #include "zip.h"
+#include "zip_internal.h"
+
+#ifndef VERSION
+#define VERSION "UNKNOWN VERSION"
+#endif
 
 static void usage(const char *cmdname)
 {
-  std::cerr << "Syntax error, expect:\n";
-  std::cerr << "\t " << cmdname << " [-h][-x] filename zipfile\n";
-  std::cerr << "\t where\t filename is the file to zip,\n";
-  std::cerr << "\t where\t zipfile is the file to unzip,\n";
-  std::cerr << "\t\t -h: print this help,\n";
-  std::cerr << "\t\t -x: do not zip a binhex or a zip file,\n";
-  std::cerr << "\t\t -D: only zip the file containing a resource fork or finder information.\n";
+  std::cerr << "Usage: " << cmdname << " [-h][-x][-D] FILENAME ZIPFILE\n";
+  std::cerr << "\n";
+  std::cerr << "try to zip the content of FILENAME in ZIPFILE.\n";
+  std::cerr << "\n";
+  std::cerr << "Options:\n";
+  std::cerr << "\t -h: print this help,\n";
+  std::cerr << "\t -x: do not zip a BinHex, an OLE2 or a Zip file,\n";
+  std::cerr << "\t -v: output mwawZip version\n";
+  std::cerr << "\t -D: only zip the file containing a resource fork or finder information.\n";
 }
 
+int printVersion()
+{
+  std::cerr << "mwawZip " << VERSION << "\n";
+  return 0;
+}
 
-int __cdecl main (int argc, char **argv)
+int __cdecl main(int argc, char **argv)
 {
   bool checkZip=false;
   bool verbose=false;
   bool doNotCompressSimpleFile=false;
   int ch;
-  while ((ch = getopt(argc, argv, "hxD")) != -1) {
+  while ((ch = getopt(argc, argv, "hvxD")) != -1) {
     switch (ch) {
+    case 'v':
+      printVersion();
+      return 0;
     case 'x':
       checkZip=true;
       break;
@@ -85,7 +99,7 @@ int __cdecl main (int argc, char **argv)
 
   // check if it is a regular file
   struct stat status;
-  if (stat(argv[optind], &status ) || !S_ISREG(status.st_mode) ) {
+  if (stat(argv[optind], &status) || !S_ISREG(status.st_mode)) {
     std::cerr << argv[0] << ": the file " << argv[optind] << " is a not a regular file\n";
     return 1;
   }
@@ -97,27 +111,34 @@ int __cdecl main (int argc, char **argv)
         std::cerr << argv[0] << ": the file " << argv[optind] << " seems bad\n";
         return 1;
       }
-      file.seekg (0, std::ios::beg);
+      file.seekg(0, std::ios::beg);
       char buff[4] = {'\0', '\0','\0','\0'};
-      file.read (buff,4);
+      file.read(buff,4);
       // look for a zip file signature
       if (buff[0]=='P' && buff[1]=='K') {
         if (((buff[2]==(char)3||buff[2]==(char)5||buff[2]==(char)7) && buff[3]==buff[2]+(char)1) ||
             (buff[2]=='L'&&buff[3]=='I') || (buff[2]=='S'&&buff[3]=='p'))
           return 2;
       }
+      // look for an ole file signature
+      else if (buff[0]==(char) 0xd0 && buff[1]==(char) 0xcf && buff[2]==(char) 0x11 && buff[3]==(char) 0xe0) {
+        file.read(buff,4);
+        if (buff[0]==(char) 0xa1&&buff[1]==(char) 0xb1&&buff[2]==(char) 0x1a&&buff[3]==(char) 0xe1)
+          return 2;
+      }
       // look for a binhex file signature
-      if (buff[0]=='('&&buff[1]=='T'&&buff[2]=='h'&&buff[3]=='i') {
-        file.read (buff,4);
+      else if (buff[0]=='('&&buff[1]=='T'&&buff[2]=='h'&&buff[3]=='i') {
+        file.read(buff,4);
         if (buff[0]=='s'&&buff[1]==' '&&buff[2]=='f'&&buff[3]=='i')
           return 2;
       }
-    } catch(...) {
+    }
+    catch (...) {
     }
   }
   std::string resultFile(argv[optind+1]);
   // check if the file exists
-  if (stat(resultFile.c_str(), &status )==0) {
+  if (stat(resultFile.c_str(), &status)==0) {
     std::cerr  << argv[0] << ": the file " << resultFile << " already exists\n";
     return 1;
   }
@@ -158,9 +179,9 @@ int __cdecl main (int argc, char **argv)
     if (!auxiStream) {
       // look for a resource file
       std::string name=folder+"._"+file;
-      if (stat(name.c_str(), &status ) || !S_ISREG(status.st_mode) ) {
+      if (stat(name.c_str(), &status) || !S_ISREG(status.st_mode)) {
         name=folder+"__MACOSX/._"+file;
-        if (stat(name.c_str(), &status ) || !S_ISREG(status.st_mode) )
+        if (stat(name.c_str(), &status) || !S_ISREG(status.st_mode))
           name = "";
       }
       if (name.length()) {
@@ -179,7 +200,8 @@ int __cdecl main (int argc, char **argv)
       zip.add(auxiStream, name.c_str());
     }
     zip.close();
-  } catch(...) {
+  }
+  catch (...) {
     std::cerr << argv[0] << ": error when zipping file " << argv[optind] << "\n";
     return -1;
   }

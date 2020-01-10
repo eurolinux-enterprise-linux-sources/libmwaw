@@ -33,17 +33,26 @@
 
 #ifndef MWAW_HEADER_H
 #define MWAW_HEADER_H
+/** \file MWAWHeader.hxx
+ * Defines MWAWHeader (document's type, version, kind)
+ */
 
 #include <vector>
 
-#include <libwpd-stream/libwpd-stream.h>
+#include <librevenge-stream/librevenge-stream.h>
 
 #include <libmwaw/libmwaw.hxx>
 #include "MWAWInputStream.hxx"
 
-/** \brief a function used by MWAWDocument to store the version of document and the input
+/** \brief a function used by MWAWDocument to store the version of document
  *
- * This class is mainly used to maintain a symetry with the libwpd library */
+ * This class is responsible for finding a list of potential formats
+ * corresponding to a file, this list will latter be checked by
+ * calling the corresponding parser's function checkHeader via
+ * MWAWDocument.
+ *
+ * This class also allows to store the document type, king and version.
+ */
 class MWAWHeader
 {
 public:
@@ -55,7 +64,7 @@ public:
 
       \param type the document type
       \param version the file version
-      \param king the document kind (default word processing document)
+      \param kind the document kind (default word processing document)
   */
   MWAWHeader(MWAWDocument::Type type=MWAWDocument::MWAW_T_UNKNOWN, int version=0,
              MWAWDocument::Kind kind = MWAWDocument::MWAW_K_TEXT);
@@ -70,36 +79,43 @@ public:
   (MWAWInputStreamPtr input, shared_ptr<MWAWRSRCParser> rsrcParser);
 
   //! resets the data
-  void reset(MWAWDocument::Type type, int vers, Kind kind = MWAWDocument::MWAW_K_TEXT) {
+  void reset(MWAWDocument::Type type, int vers, Kind kind = MWAWDocument::MWAW_K_TEXT)
+  {
     m_docType = type;
     m_version = vers;
     m_docKind = kind;
   }
 
   //! returns the major version
-  int getMajorVersion() const {
+  int getMajorVersion() const
+  {
     return m_version;
   }
   //! sets the major version
-  void setMajorVersion(int version) {
+  void setMajorVersion(int version)
+  {
     m_version=version;
   }
 
   //! returns the document type
-  Type getType() const {
+  Type getType() const
+  {
     return m_docType;
   }
   //! sets the document type
-  void setType(Type type) {
+  void setType(Type type)
+  {
     m_docType = type;
   }
 
   //! returns the document kind
-  Kind getKind() const {
+  Kind getKind() const
+  {
     return m_docKind;
   }
   //! sets the document kind
-  void setKind(Kind kind) {
+  void setKind(Kind kind)
+  {
     m_docKind = kind;
   }
 

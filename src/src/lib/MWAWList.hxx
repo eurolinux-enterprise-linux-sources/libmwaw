@@ -38,9 +38,7 @@
 
 #include <vector>
 
-#include <libwpd/libwpd.h>
-
-class WPXPropertyList;
+#include <librevenge/librevenge.h>
 
 /** small structure to keep information about a list level */
 struct MWAWListLevel {
@@ -48,29 +46,33 @@ struct MWAWListLevel {
   enum Type { DEFAULT, NONE, BULLET, DECIMAL, LOWER_ALPHA, UPPER_ALPHA,
               LOWER_ROMAN, UPPER_ROMAN, LABEL
             };
-  //! the item alignement
+  //! the item alignment
   enum Alignment { LEFT, RIGHT, CENTER };
 
   /** basic constructor */
   MWAWListLevel() : m_type(NONE), m_labelBeforeSpace(0.0), m_labelWidth(0.1), m_labelAfterSpace(0.0), m_numBeforeLabels(0), m_alignment(LEFT), m_startValue(0),
-    m_label(""), m_prefix(""), m_suffix(""), m_bullet(""), m_extra("") {
+    m_label(""), m_prefix(""), m_suffix(""), m_bullet(""), m_extra("")
+  {
   }
   /** destructor */
   ~MWAWListLevel() {}
 
   /** returns true if the level type was not set */
-  bool isDefault() const {
+  bool isDefault() const
+  {
     return m_type ==DEFAULT;
   }
   /** returns true if the list is decimal, alpha or roman */
-  bool isNumeric() const {
+  bool isNumeric() const
+  {
     return m_type !=DEFAULT && m_type !=NONE && m_type != BULLET;
   }
   /** add the information of this level in the propList */
-  void addTo(WPXPropertyList &propList) const;
+  void addTo(librevenge::RVNGPropertyList &propList) const;
 
   /** returns the start value (if set) or 1 */
-  int getStartValue() const {
+  int getStartValue() const
+  {
     return m_startValue <= 0 ? 1 : m_startValue;
   }
 
@@ -87,14 +89,14 @@ struct MWAWListLevel {
   double m_labelAfterSpace /** the minimum distance between the label and the text */;
   /** the number of label to show before this */
   int m_numBeforeLabels;
-  //! the alignement ( left, center, ...)
+  //! the alignment ( left, center, ...)
   Alignment m_alignment;
   /** the actual value (if this is an ordered level ) */
   int m_startValue;
-  WPXString m_label /** the text label */,
-            m_prefix /** string which preceedes the number if we have an ordered level*/,
-            m_suffix/** string which follows the number if we have an ordered level*/,
-            m_bullet /** the bullet if we have an bullet level */;
+  librevenge::RVNGString m_label /** the text label */,
+             m_prefix /** string which preceedes the number if we have an ordered level*/,
+             m_suffix/** string which follows the number if we have an ordered level*/,
+             m_bullet /** the bullet if we have an bullet level */;
   //! extra data
   std::string m_extra;
 };
@@ -104,17 +106,20 @@ class MWAWList
 {
 public:
   /** default constructor */
-  MWAWList() : m_levels(), m_actLevel(-1), m_actualIndices(), m_nextIndices(), m_modifyMarker(1) {
+  MWAWList() : m_levels(), m_actLevel(-1), m_actualIndices(), m_nextIndices(), m_modifyMarker(1)
+  {
     m_id[0] = m_id[1] = -1;
   }
 
   /** returns the list id */
-  int getId() const {
+  int getId() const
+  {
     return m_id[0];
   }
 
   /** returns the actual modify marker */
-  int getMarker() const {
+  int getMarker() const
+  {
     return m_modifyMarker;
   }
   /** resize the number of level of the list (keeping only n level) */
@@ -130,7 +135,8 @@ public:
 
   \note a cheat because writerperfect imposes to get a new id if the level 1 changes
   */
-  void swapId() const {
+  void swapId() const
+  {
     int tmp = m_id[0];
     m_id[0] = m_id[1];
     m_id[1] = tmp;
@@ -140,14 +146,16 @@ public:
   void setId(int newId) const;
 
   /** returns a level if it exists */
-  MWAWListLevel getLevel(int levl) const {
+  MWAWListLevel getLevel(int levl) const
+  {
     if (levl >= 0 && levl < int(m_levels.size()))
       return m_levels[size_t(levl)];
     MWAW_DEBUG_MSG(("MWAWList::getLevel: can not find level %d\n", levl));
     return MWAWListLevel();
   }
   /** returns the number of level */
-  int numLevels() const {
+  int numLevels() const
+  {
     return int(m_levels.size());
   }
   /** sets a level */
@@ -168,7 +176,7 @@ public:
   bool isNumeric(int levl) const;
 
   /// retrieve the list level property
-  bool addTo(int level, WPXPropertyList &pList) const;
+  bool addTo(int level, librevenge::RVNGPropertyList &pList) const;
 
 protected:
   //! the different levels

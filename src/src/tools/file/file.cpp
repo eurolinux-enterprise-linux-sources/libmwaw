@@ -44,6 +44,14 @@
 
 #include <sys/stat.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifndef VERSION
+#define VERSION "UNKNOWN VERSION"
+#endif
+
 namespace libmwaw_tools
 {
 class Exception
@@ -55,26 +63,28 @@ struct File {
   File(char const *path) : m_fName(path ? path : ""),
     m_fInfoCreator(""), m_fInfoType(""), m_fInfoResult(""),
     m_fileVersion(), m_appliVersion(), m_rsrcMissingMessage(""), m_rsrcResult(""),
-    m_dataResult(), m_printFileName(false) {
-    if (!m_fName.length()) {
+    m_dataResult(), m_printFileName(false)
+  {
+    if (m_fName.empty()) {
       std::cerr << "File::File: call without path\n";
       throw libmwaw_tools::Exception();
     }
 
     // check if it is a regular file
     struct stat status;
-    if ( stat( path, &status ) == -1 ) {
+    if (!path || stat(path, &status) == -1) {
       std::cerr << "File::File: the file " << m_fName << " cannot be read\n";
       throw libmwaw_tools::Exception();
     }
-    if ( !S_ISREG(status.st_mode) ) {
+    if (!S_ISREG(status.st_mode)) {
       std::cerr << "File::File: the file " << m_fName << " is a not a regular file\n";
       throw libmwaw_tools::Exception();
     }
   }
 
   //! operator<<
-  friend std::ostream &operator<<(std::ostream &o, File const &info) {
+  friend std::ostream &operator<<(std::ostream &o, File const &info)
+  {
     if (info.m_printFileName)
       o << info.m_fName << ":\n";
     if (info.m_fInfoCreator.length() || info.m_fInfoType.length()) {
@@ -114,7 +124,8 @@ struct File {
   bool readRSRCInformation();
 
   //! can type the file
-  bool canPrintResult(int verbose) const {
+  bool canPrintResult(int verbose) const
+  {
     if (m_fInfoResult.length() || m_dataResult.size() || m_rsrcResult.length()) return true;
     if (verbose <= 0) return false;
     if (m_fInfoCreator.length() || m_fInfoType.length()) return true;
@@ -124,12 +135,14 @@ struct File {
   //! print the file type
   bool printResult(std::ostream &o, int verbose) const;
 
-  bool checkFInfoType(char const *type, char const *result) {
+  bool checkFInfoType(char const *type, char const *result)
+  {
     if (m_fInfoType != type) return false;
     m_fInfoResult=result;
     return true;
   }
-  bool checkFInfoType(char const *result) {
+  bool checkFInfoType(char const *result)
+  {
     m_fInfoResult=result;
     if (m_fInfoType=="AAPL")
       m_fInfoResult+="[Application]";
@@ -139,7 +152,8 @@ struct File {
       m_fInfoResult+="["+m_fInfoType+"]";
     return true;
   }
-  bool checkFInfoCreator(char const *result) {
+  bool checkFInfoCreator(char const *result)
+  {
     m_fInfoResult=result;
     if (m_fInfoCreator.length())
       m_fInfoResult+="["+m_fInfoCreator+"]";
@@ -187,34 +201,48 @@ bool File::readFileInformation()
 
   input->seek(0, libmwaw_tools::InputStream::SK_SET);
   m_fInfoType = "";
-  for (int i = 0; i < 4; i++)
-    m_fInfoType+= input->read8();
+  for (int i = 0; i < 4; i++) {
+    char c= input->read8();
+    if (c==0) break;
+    m_fInfoType+= c;
+  }
   m_fInfoCreator="";
-  for (int i = 0; i < 4; i++)
-    m_fInfoCreator+= input->read8();
+  for (int i = 0; i < 4; i++) {
+    char c= input->read8();
+    if (c==0) break;
+    m_fInfoCreator+= c;
+  }
   delete input;
 
   if (m_fInfoCreator=="" || m_fInfoType=="")
     return true;
   if (m_fInfoCreator=="AB65") {
     checkFInfoType("AD65", "Pagemaker6.5") || checkFInfoType("Pagemaker6.5");
-  } else if (m_fInfoCreator=="ACTA") {
+  }
+  else if (m_fInfoCreator=="ACTA") {
     checkFInfoType("OTLN", "Acta") || checkFInfoType("otln", "Acta") || checkFInfoType("Acta");
-  } else if (m_fInfoCreator=="ALB3") {
+  }
+  else if (m_fInfoCreator=="ALB3") {
     checkFInfoType("ALD3", "Pagemaker3") || checkFInfoType("Pagemaker3");
-  } else if (m_fInfoCreator=="ALB4") {
+  }
+  else if (m_fInfoCreator=="ALB4") {
     checkFInfoType("ALD4", "Pagemaker4") || checkFInfoType("Pagemaker4");
-  } else if (m_fInfoCreator=="ALB5") {
+  }
+  else if (m_fInfoCreator=="ALB5") {
     checkFInfoType("ALD5", "Pagemaker5") || checkFInfoType("Pagemaker5");
-  } else if (m_fInfoCreator=="ALB6") {
+  }
+  else if (m_fInfoCreator=="ALB6") {
     checkFInfoType("ALD6", "Pagemaker6") || checkFInfoType("Pagemaker6");
-  } else if (m_fInfoCreator=="AOqc") {
+  }
+  else if (m_fInfoCreator=="AOqc") {
     checkFInfoType("TEXT","America Online") || checkFInfoType("ttro","America Online[readOnly]") ||
     checkFInfoType("America Online");
-  } else if (m_fInfoCreator=="AOS1") {
+  }
+  else if (m_fInfoCreator=="AOS1") {
     checkFInfoType("TEXT","eWorld") || checkFInfoType("ttro","eWorld[readOnly]") ||
     checkFInfoType("eWorld");
-  } else if (m_fInfoCreator=="BOBO") {
+  }
+  else if (m_fInfoCreator=="BOBO") {
     checkFInfoType("CWDB","ClarisWorks/AppleWorks 1.0[Database]")||
     checkFInfoType("CWD2","ClarisWorks/AppleWorks 2.0-3.0[Database]")||
     checkFInfoType("sWDB","ClarisWorks/AppleWorks 2.0-3.0[Database]")||
@@ -224,79 +252,121 @@ bool File::readFileInformation()
     checkFInfoType("CWS2","ClarisWorks/AppleWorks 2.0-3.0[SpreadSheet]")||
     checkFInfoType("sWSS","ClarisWorks/AppleWorks 2.0-3.0[SpreadSheet]")||
     checkFInfoType("CWPR","ClarisWorks/AppleWorks[Presentation]")||
+    checkFInfoType("CWPT","ClarisWorks/AppleWorks[Paint]")||
     checkFInfoType("CWWP","ClarisWorks/AppleWorks")||
     checkFInfoType("CWW2","ClarisWorks/AppleWorks 2.0-3.0")||
     checkFInfoType("sWWP","ClarisWorks/AppleWorks 2.0-3.0")||
     checkFInfoType("ClarisWorks/AppleWorks");
-  } else if (m_fInfoCreator=="BWks") {
+  }
+  else if (m_fInfoCreator=="BWks") {
     checkFInfoType("BWwp","BeagleWorks/WordPerfect Works") ||
     checkFInfoType("BWdb","BeagleWorks/WordPerfect Works[Database]") ||
     checkFInfoType("BWss","BeagleWorks/WordPerfect Works[SpreadSheet]") ||
-    checkFInfoType("BWpt","BeagleWorks/WordPerfect Works[Presentation]") ||
+    checkFInfoType("BWpt","BeagleWorks/WordPerfect Works[Paint]") ||
     checkFInfoType("BWdr","BeagleWorks/WordPerfect Works[Draw]") ||
     checkFInfoType("BeagleWorks/WordPerfect Works");
-  } else if (m_fInfoCreator=="CARO") {
+  }
+  else if (m_fInfoCreator=="CARO") {
     checkFInfoType("PDF ", "Acrobat PDF");
-  } else if (m_fInfoCreator=="CDrw") {
-    checkFInfoType("dDraw", "ClarisDraw") || checkFInfoType("ClarisDraw");
-  } else if (m_fInfoCreator=="DkmR") {
+  }
+  else if (m_fInfoCreator=="C#+A") {
+    checkFInfoType("C#+D","RagTime 5") || checkFInfoType("C#+F","RagTime 5[form]") ||
+    checkFInfoType("RagTime 5");
+  }
+  else if (m_fInfoCreator=="CDrw") {
+    checkFInfoType("dDrw", "ClarisDraw") || checkFInfoType("dDst", "ClarisDraw[stationary]") ||
+    checkFInfoType("iLib", "ClarisDraw[library]") || checkFInfoType("ClarisDraw");
+  }
+  else if (m_fInfoCreator=="DkmR") {
     checkFInfoType("TEXT","Basic text(created by DOCMaker)") || checkFInfoType("DOCMaker");
-  } else if (m_fInfoCreator=="Dk@P") {
+  }
+  else if (m_fInfoCreator=="Dc@P" || m_fInfoCreator=="Dk@P") {
     checkFInfoType("APPL","DOCMaker") || checkFInfoType("DOCMaker");
-  } else if (m_fInfoCreator=="DDAP") {
+  }
+  else if (m_fInfoCreator=="DDAP") {
     checkFInfoType("DDFL+","DiskDoubler") || checkFInfoType("DiskDoubler");
-  } else if (m_fInfoCreator=="FH50") {
+  }
+  else if (m_fInfoCreator=="FH50") {
     checkFInfoType("AGD1","FreeHand 5") || checkFInfoType("FreeHand 5");
-  } else if (m_fInfoCreator=="FHD3") {
+  }
+  else if (m_fInfoCreator=="FHD3") {
     checkFInfoType("FHA3","FreeHand 3") || checkFInfoType("FreeHand 3");
-  } else if (m_fInfoCreator=="FS03") {
+  }
+  else if (m_fInfoCreator=="FS03") {
     checkFInfoType("WRT+","WriterPlus") || checkFInfoType("WriterPlus");
-  } else if (m_fInfoCreator=="Fram") {
+  }
+  else if (m_fInfoCreator=="Fram") {
     checkFInfoType("FASL","FrameMaker") || checkFInfoType("MIF2","FrameMaker MIF2.0") ||
     checkFInfoType("MIF3","FrameMaker MIF3.0") || checkFInfoType("MIF ","FrameMaker MIF") ||
     checkFInfoType("FrameMaker");
-  } else if (m_fInfoCreator=="FWRT") {
+  }
+  else if (m_fInfoCreator=="FWRT") {
     checkFInfoType("FWRT","FullWrite 1.0") || checkFInfoType("FWRM","FullWrite 1.0") ||
     checkFInfoType("FWRI","FullWrite 2.0") || checkFInfoType("FullWrite");
-  } else if (m_fInfoCreator=="JWrt") {
+  }
+  else if (m_fInfoCreator=="F#+A") {
+    checkFInfoType("F#+D","RagTime Classic") || checkFInfoType("F#+F","RagTime Classic[form]") ||
+    checkFInfoType("RagTime Classic");
+  }
+  else if (m_fInfoCreator=="JWrt") {
     checkFInfoType("TEXT","JoliWrite") || checkFInfoType("ttro","JoliWrite[readOnly]") ||
     checkFInfoType("JoliWrite");
-  } else if (m_fInfoCreator=="HMiw") {
+  }
+  else if (m_fInfoCreator=="HMiw") {
     checkFInfoType("IWDC","HanMac Word-J") || checkFInfoType("HanMac Word-J");
-  } else if (m_fInfoCreator=="HMdr") {
+  }
+  else if (m_fInfoCreator=="HMdr") {
     checkFInfoType("DRD2","HanMac Word-K") || checkFInfoType("HanMac Word-K");
-  } else if (m_fInfoCreator=="LWTE") {
+  }
+  else if (m_fInfoCreator=="L123") {
+    checkFInfoType("LWKS","Lotus123") || checkFInfoType("Lotus123");
+  }
+  else if (m_fInfoCreator=="LWTE") {
     checkFInfoType("TEXT","LightWayText") || checkFInfoType("MACR","LightWayText[MACR]") ||
     checkFInfoType("pref","LightWayText[Preferences]") ||
     checkFInfoType("ttro","LightWayText[Tutorial]") || checkFInfoType("LightWayText");
-  } else if (m_fInfoCreator=="LWTR") {
+  }
+  else if (m_fInfoCreator=="LWTR") {
     checkFInfoType("APPL","LightWayText[appli]");
-  } else if (m_fInfoCreator=="MACA") {
+  }
+  else if (m_fInfoCreator=="MACA") {
     checkFInfoType("WORD","MacWrite") || checkFInfoType("MacWrite");
-  } else if (m_fInfoCreator=="MACD") { // checkme
-    checkFInfoType("DRWG","MacDraw[unsure]");
-  } else if (m_fInfoCreator=="MDsr") {
+  }
+  else if (m_fInfoCreator=="MACD") {
+    checkFInfoType("DRWG","MacDraft 1.0") || checkFInfoType("MacDraft 1.0");
+  }
+  else if (m_fInfoCreator=="MD40") {
+    checkFInfoType("MDDC","MacDraft 5.0") || checkFInfoType("MacDraft 5.0");
+  }
+  else if (m_fInfoCreator=="MDsr") {
     checkFInfoType("APPL","MacDoc(appli)");
-  } else if (m_fInfoCreator=="MDvr") {
+  }
+  else if (m_fInfoCreator=="MDvr") {
     checkFInfoType("MDdc","MacDoc") || checkFInfoType("MacDoc");
-  } else if (m_fInfoCreator=="MDRW") {
+  }
+  else if (m_fInfoCreator=="MDFT") {
+    checkFInfoType("DRWG","MacDraft 1.2") || checkFInfoType("MacDraft 1.2");
+  }
+  else if (m_fInfoCreator=="MDRW") {
     checkFInfoType("DRWG","MacDraw") || checkFInfoType("MacDraw");
-  } else if (m_fInfoCreator=="MDPL") {
-    checkFInfoType("DRWG","MacDraw II") || checkFInfoType("MacDraw II");
-  } else if (m_fInfoCreator=="MMBB") {
+  }
+  else if (m_fInfoCreator=="MDPL") {
+    checkFInfoType("DRWG","MacDraw II") || checkFInfoType("STAT","MacDraw II(template)") || checkFInfoType("MacDraw II");
+  }
+  else if (m_fInfoCreator=="MMBB") {
     checkFInfoType("MBBT","Mariner Write") || checkFInfoType("Mariner Write");
-  } else if (m_fInfoCreator=="MORE") {
+  }
+  else if (m_fInfoCreator=="MORE") {
     checkFInfoType("MORE","More") || checkFInfoType("More");
-  } else if (m_fInfoCreator=="MOR2") {
+  }
+  else if (m_fInfoCreator=="MOR2") {
     checkFInfoType("MOR2","More 2") || checkFInfoType("MOR3","More 3") ||
     checkFInfoType("More 2-3");
-  } else if (m_fInfoCreator=="MPNT") {
+  }
+  else if (m_fInfoCreator=="MPNT") {
     checkFInfoType("PNTG","MacPaint") || checkFInfoType("MacPaint");
-  } else if (m_fInfoCreator=="MWII") {
-    checkFInfoType("MW2D","MacWrite II") || checkFInfoType("MacWrite II");
-  } else if (m_fInfoCreator=="MWPR") {
-    checkFInfoType("MWPd","MacWrite Pro") || checkFInfoType("MacWrite Pro");
-  } else if (m_fInfoCreator=="MSWD") {
+  }
+  else if (m_fInfoCreator=="MSWD") {
     checkFInfoType("WDBN","Microsoft Word 3-5") ||
     checkFInfoType("GLOS","Microsoft Word 3-5[glossary]") ||
     checkFInfoType("W6BN", "Microsoft Word 6") ||
@@ -304,43 +374,84 @@ bool File::readFileInformation()
     checkFInfoType("W8TN", "Microsoft Word 8[W8TN]") || // ?
     checkFInfoType("WXBN", "Microsoft Word 97-2004") || // Office X ?
     checkFInfoType("Microsoft Word");
-  } else if (m_fInfoCreator=="MSWK") {
+  }
+  else if (m_fInfoCreator=="MSWK") {
     checkFInfoType("AWWP","Microsoft Works 3") ||
+    checkFInfoType("AWDB","Microsoft Works 3-4[database]") ||
+    checkFInfoType("AWDR","Microsoft Works 3-4[draw]") ||
+    checkFInfoType("AWSS","Microsoft Works 3-4[spreadsheet]") ||
     checkFInfoType("RLRB","Microsoft Works 4") ||
     checkFInfoType("sWRB","Microsoft Works 4[template]") ||
     checkFInfoType("Microsoft Works 3-4");
-  } else if (m_fInfoCreator=="NISI") {
+  }
+  else if (m_fInfoCreator=="MWII") {
+    checkFInfoType("MW2D","MacWrite II") || checkFInfoType("MacWrite II");
+  }
+  else if (m_fInfoCreator=="MWPR") {
+    checkFInfoType("MWPd","MacWrite Pro") || checkFInfoType("MacWrite Pro");
+  }
+  else if (m_fInfoCreator=="NISI") {
     checkFInfoType("TEXT","Nisus") || checkFInfoType("GLOS","Nisus[glossary]") ||
     checkFInfoType("SMAC","Nisus[macros]") || checkFInfoType("edtt","Nisus[lock]") ||
     checkFInfoType("Nisus");
-  } else if (m_fInfoCreator=="PPNT") {
+  }
+  else if (m_fInfoCreator=="PPNT") {
     checkFInfoType("SLDS","Microsoft PowerPoint") || checkFInfoType("Microsoft PowerPoint");
-  } else if (m_fInfoCreator=="PPT3") {
+  }
+  else if (m_fInfoCreator=="PPT3") {
     checkFInfoType("SLD8","Microsoft PowerPoint 97-2004") || checkFInfoType("Microsoft PowerPoint 97-2004");
-  } else if (m_fInfoCreator=="PSIP") {
+  }
+  else if (m_fInfoCreator=="PSIP") {
     checkFInfoType("AWWP","Microsoft Works 1.0") || checkFInfoType("Microsoft Works 1.0");
-  } else if (m_fInfoCreator=="PSI2") {
-    checkFInfoType("AWWP","Microsoft Works 2.0") || checkFInfoType("Microsoft Works 2.0");
-  } else if (m_fInfoCreator=="PWRI") {
+  }
+  else if (m_fInfoCreator=="PSI2") {
+    checkFInfoType("AWWP","Microsoft Works 2.0") || checkFInfoType("AWDB","Microsoft Works 2.0[database]") ||
+    checkFInfoType("AWSS","Microsoft Works 2.0[spreadsheet]") || checkFInfoType("Microsoft Works 2.0");
+  }
+  else if (m_fInfoCreator=="PWRI") {
     checkFInfoType("OUTL","MindWrite") || checkFInfoType("MindWrite");
-  } else if (m_fInfoCreator=="R#+A") {
-    checkFInfoType("R#+D","RagTime") || checkFInfoType("RagTime");
-  } else if (m_fInfoCreator=="RTF ") {
+  }
+  else if (m_fInfoCreator=="R#+A") {
+    checkFInfoType("R#+D","RagTime") || checkFInfoType("R#+F","RagTime[form]") ||
+    checkFInfoType("RagTime");
+  }
+  else if (m_fInfoCreator=="RTF ") {
     checkFInfoType("RTF ","RTF ") || checkFInfoType("RTF");
-  } else if (m_fInfoCreator=="SIT!") {
+  }
+  else if (m_fInfoCreator=="Rslv") {
+    checkFInfoType("RsWs","Claris Resolve") || checkFInfoType("Claris Resolve");
+  }
+  else if (m_fInfoCreator=="SIT!") {
     checkFInfoType("SIT5", "archive SIT") ||
     checkFInfoType("SITD", "archive SIT") ||
     checkFInfoType("SIT!", "archive SIT") || checkFInfoType("SIT");
-  } else if (m_fInfoCreator=="SSIW") { // check me
+  }
+  else if (m_fInfoCreator=="SPNT") {
+    checkFInfoType("SPTG","SuperPaint 1.") || checkFInfoType("PICT","SuperPaint 2.[pict]") ||
+    checkFInfoType("DTXR","SuperPaint 3.[texture,pict]") || /* pict without 512 header*/
+    checkFInfoType("PNTG","SuperPaint 3.[macpaint]") || /* MacPaint format*/
+    checkFInfoType("PTXR","SuperPaint 3.[texture,pict]") || /* pict without 512 header*/
+    checkFInfoType("SPn3","SuperPaint 3.[pict]") || checkFInfoType("SPSt","SuperPaint 3.[pict,stationary]") ||
+    checkFInfoType("SuperPaint");
+  }
+  else if (m_fInfoCreator=="SSIW") {   // check me
     checkFInfoType("WordPerfect 1.0");
-  } else if (m_fInfoCreator=="TBB5") {
+  }
+  else if (m_fInfoCreator=="TBB5") {
     checkFInfoType("TEXT","Tex-Edit") || checkFInfoType("ttro","Tex-Edit[readOnly]") ||
     checkFInfoType("Tex-Edit");
-  } else if (m_fInfoCreator=="WORD") {
+  }
+  else if (m_fInfoCreator=="WNGZ") {
+    checkFInfoType("WZSS","Wingz[spreadsheet]") || checkFInfoType("WZSC","Wingz[script]") ||
+    checkFInfoType("Wingz");
+  }
+  else if (m_fInfoCreator=="WORD") {
     checkFInfoType("WDBN","Microsoft Word 1") || checkFInfoType("Microsoft Word 1");
-  } else if (m_fInfoCreator=="WPC2") {
+  }
+  else if (m_fInfoCreator=="WPC2") {
     checkFInfoType("WordPerfect");
-  } else if (m_fInfoCreator=="XCEL") {
+  }
+  else if (m_fInfoCreator=="XCEL") {
     checkFInfoType("XCEL","Microsoft Excel 1") ||
     checkFInfoType("XLS3","Microsoft Excel 3") ||
     checkFInfoType("XLS4","Microsoft Excel 4") ||
@@ -348,28 +459,40 @@ bool File::readFileInformation()
     checkFInfoType("XLS8","Microsoft Excel 97-2004") ||
     checkFInfoType("TEXT","Microsoft Excel[text export]") ||
     checkFInfoType("Microsoft Excel");
-  } else if (m_fInfoCreator=="XPR3") {
+  }
+  else if (m_fInfoCreator=="XPR3") {
     checkFInfoType("XDOC","QuarkXPress") || checkFInfoType("QuarkXPress");
-  } else if (m_fInfoCreator=="ZEBR") {
+  }
+  else if (m_fInfoCreator=="ZEBR") {
     checkFInfoType("ZWRT","GreatWorks") || checkFInfoType("ZTRM","GreatWorks[comm]") ||
-    checkFInfoType("ZDBS","GreatWorks[database]") || checkFInfoType("ZCAL","GreatWorks[cal]") ||
-    checkFInfoType("ZOLN","GreatWorks[outline]") || checkFInfoType("PNTG","GreatWorks[paint]") ||
-    checkFInfoType("ZOBJ","GreatWorks[draw]") || checkFInfoType("ZCHT","GreatWorks[spreadsheet]") ||
-    checkFInfoType("GreatWorks");
-  } else if (m_fInfoCreator=="ZWRT") {
+    checkFInfoType("ZDBS","GreatWorks[database]") || checkFInfoType("ZCAL","GreatWorks[spreadsheet]") ||
+    checkFInfoType("ZOLN","GreatWorks[outline]") || checkFInfoType("PNTG","GreatWorks v1[paint]") ||
+    checkFInfoType("ZPNT","GreatWorks v2[paint]") || checkFInfoType("ZOBJ","GreatWorks[draw]") ||
+    checkFInfoType("ZCHT","GreatWorks[chart]") || checkFInfoType("GreatWorks");
+  }
+  else if (m_fInfoCreator=="ZWRT") {
     checkFInfoType("Zart","Z-Write") || checkFInfoType("Z-Write");
-  } else if (m_fInfoCreator=="dPro") {
-    checkFInfoType("dDoc","MacDraw Pro") || checkFInfoType("MacDraw Pro");
-  } else if (m_fInfoCreator=="eDcR") {
+  }
+  else if (m_fInfoCreator=="cAni") {
+    checkFInfoType("curs","CursorAnimator") || checkFInfoType("CursorAnimator");
+  }
+  else if (m_fInfoCreator=="dPro") {
+    checkFInfoType("dDoc","MacDraw Pro") || checkFInfoType("dLib","MacDraw Pro(slide)") || checkFInfoType("MacDraw Pro");
+  }
+  else if (m_fInfoCreator=="eDcR") {
     checkFInfoType("eDoc","eDOC") || checkFInfoType("eDOC");
-  } else if (m_fInfoCreator=="eSRD") {
+  }
+  else if (m_fInfoCreator=="eSRD") {
     checkFInfoType("APPL","eDOC(appli)");
-  } else if (m_fInfoCreator=="nX^n") {
+  }
+  else if (m_fInfoCreator=="nX^n") {
     checkFInfoType("nX^d","WriteNow 2") || checkFInfoType("nX^2","WriteNow 3-4") ||
     checkFInfoType("WriteNow");
-  } else if (m_fInfoCreator=="ntxt") {
+  }
+  else if (m_fInfoCreator=="ntxt") {
     checkFInfoType("TEXT","Anarcho");
-  } else if (m_fInfoCreator=="ttxt") {
+  }
+  else if (m_fInfoCreator=="ttxt") {
     if (m_fInfoType=="TEXT") {
       /* a little complex can be Classic MacOS SimpleText/TeachText or
       a << normal >> text file */
@@ -384,13 +507,15 @@ bool File::readFileInformation()
       if (rsrcStream) delete rsrcStream;
       if (ok) checkFInfoType("TEXT","TeachText/SimpleText");
       else checkFInfoType("TEXT","Basic text");
-    } else
+    }
+    else
       checkFInfoType("ttro","TeachText/SimpleText[readOnly]");
   }
   // now by type
   else if (m_fInfoType=="AAPL") {
     checkFInfoCreator("Application");
-  } else if (m_fInfoType=="JFIF") {
+  }
+  else if (m_fInfoType=="JFIF") {
     checkFInfoCreator("JPEG");
   }
   if (m_fInfoCreator.length()==0) {
@@ -425,7 +550,7 @@ bool File::readDataInformation()
     else if (val[3]==0x6472)
       m_dataResult.push_back("BeagleWorks/WordPerfect Works[Draw]");
     else if (val[3]==0x7074)
-      m_dataResult.push_back("BeagleWorks/WordPerfect Works[Presentation]");
+      m_dataResult.push_back("BeagleWorks/WordPerfect Works[Paint]");
     else if (val[3]==0x7373)
       m_dataResult.push_back("BeagleWorks/WordPerfect Works[Spreadsheet]");
     else if (val[3]==0x7770)
@@ -434,9 +559,27 @@ bool File::readDataInformation()
       m_dataResult.push_back("BeagleWorks/WordPerfect Works[Unknown]");
     return true;
   }
+  if (val[0]==0x4323 && val[1]==0x2b44 && val[2]==0xa443 && val[3]==0x4da5 && val[4]==0x4864) {
+    m_dataResult.push_back("RagTime 5-6");
+    return true;
+  }
   if (val[0]==0x5772 && val[1]==0x6974 && val[2]==0x654e && val[3]==0x6f77 && val[4]==2) {
     m_dataResult.push_back("WriteNow 3-4");
     return true;
+  }
+  if (val[0]==0x4241 && val[1]==0x545F && val[2]==0x4254 && val[3]==0x5353) {
+    m_dataResult.push_back("Claris Resolve");
+    return true;
+  }
+  if (val[0]==0x574e && val[1]==0x475a && val[2]==0x575a) {
+    if (val[3]==0x5353) {
+      m_dataResult.push_back("Wingz");
+      return true;
+    }
+    if (val[3]==0x5343) {
+      m_dataResult.push_back("Wingz[script]");
+      return true;
+    }
   }
   if (val[0]==3 && val[1]==0x4d52 && val[2]==0x4949 && val[3]==0x80) {
     m_dataResult.push_back("More 2");
@@ -446,8 +589,34 @@ bool File::readDataInformation()
     m_dataResult.push_back("More 3");
     return true;
   }
+  if (val[0]==2 && val[1]==0 && val[2]==2 && val[3]==0x262 && val[4]==0x262) {
+    m_dataResult.push_back("MacDraft");
+    return true;
+  }
   if (val[0]==0x4646 && val[1]==0x4646 && val[2]==0x3030 && val[3]==0x3030) {
     m_dataResult.push_back("Mariner Write");
+    return true;
+  }
+  if (val[0]==0x4452 && val[1]==0x5747) { // DRWG
+    if (val[2]==0x4d44) { // MD
+      m_dataResult.push_back("MacDraw");
+      return true;
+    }
+    if (val[2]==0 || val[2]==0x4432) { // nothing or D2
+      m_dataResult.push_back("MacDraw II");
+      return true;
+    }
+  }
+  if (val[0]==0x5354 && val[1]==0x4154 && (val[2]==0||val[2]==0x4432)) { // STATD2
+    m_dataResult.push_back("MacDraw II(template)");
+    return true;
+  }
+  if (val[0]==0x6444 && val[1]==0x6f63 && val[2]==0x4432) { // dDocD2
+    m_dataResult.push_back("MacDraw Pro");
+    return true;
+  }
+  if (val[0]==0x644c && val[1]==0x6962 && val[2]==0x4432) { // dLibD2
+    m_dataResult.push_back("MacDraw Pro(slide)");
     return true;
   }
   if (val[0]==0x4859 && val[1]==0x4c53 && val[2]==0x0210) {
@@ -540,7 +709,7 @@ bool File::readDataInformation()
       return true;
     }
     if (val[1]==0x5a43 && val[2]==0x414c) {
-      m_dataResult.push_back("GreatWorks[cal]");
+      m_dataResult.push_back("GreatWorks[spreadsheet]");
       return true;
     }
     if (val[1]==0x5a4f && val[2]==0x424a) {
@@ -548,9 +717,16 @@ bool File::readDataInformation()
       return true;
     }
     if (val[1]==0x5a43 && val[2]==0x4854) {
-      m_dataResult.push_back("GreatWorks[spreadsheet]");
+      m_dataResult.push_back("GreatWorks[chart]");
       return true;
     }
+  }
+  if ((val[0]==0x100||val[0]==0x200) && val[2]==0x4558 && val[3]==0x5057) {
+    if (val[0]==0x100)
+      m_dataResult.push_back("ClarisDraw");
+    else
+      m_dataResult.push_back("ClarisDraw[library]");
+    return true;
   }
   // less discriminant
   if ((val[0]==0xfe32 && val[1]==0) || (val[0]==0xfe34 && val[1]==0) ||
@@ -572,6 +748,13 @@ bool File::readDataInformation()
       break;
     }
   }
+  if (val[0]==0 && input.length() > 30) {
+    input.seek(16, InputStream::SK_SET);
+    if (input.readU16()==0x688f && input.readU16()==0x688f) {
+      m_dataResult.push_back("RagTime");
+      return true;
+    }
+  }
   if (val[0]==0 && val[1]==0 && val[2]==0 && val[3]==0 &&
       ((val[4]>>8)==4 || (val[4]>>8)==0x44))
     m_dataResult.push_back("WriteNow 1-2");
@@ -587,6 +770,9 @@ bool File::readDataInformation()
     m_dataResult.push_back("Microsoft Word 2.0[pc]");
     return true;
   }
+  if (val[0]==0x4D44) { // MD
+    m_dataResult.push_back("MacDraw v0[unsure]");
+  }
   if (val[0] == 3 || val[0] == 6) {
     int numParaPos = val[0] == 3 ? 2 : 1;
     if (val[numParaPos] < 0x1000 && val[numParaPos+1] < 0x100 && val[numParaPos+2] < 0x100)
@@ -595,7 +781,7 @@ bool File::readDataInformation()
   if (val[0]==0) {
     std::stringstream s;
     bool ok = true;
-    switch(val[1]) {
+    switch (val[1]) {
     case 4:
       s << "Microsoft Works 1.0";
       break;
@@ -614,7 +800,7 @@ bool File::readDataInformation()
     }
     input.seek(16, InputStream::SK_SET);
     int type = ok ? (int) input.readU16() : -1;
-    switch(type) {
+    switch (type) {
     case 1:
       break;
     case 2:
@@ -691,7 +877,7 @@ bool File::readRSRCInformation()
   m_rsrcMissingMessage = rsrcManager.getString(-16397);
   std::vector<RSRC::Version> listVersion = rsrcManager.getVersionList();
   for (size_t i=0; i < listVersion.size(); i++) {
-    switch(listVersion[i].m_id) {
+    switch (listVersion[i].m_id) {
     case 1:
       m_fileVersion = listVersion[i];
       break;
@@ -729,7 +915,8 @@ bool File::printResult(std::ostream &o, int verbose) const
     }
     if (num>1)
       o << "]";
-  } else
+  }
+  else
     o << "unknown";
   if (verbose > 0) {
     if (m_fInfoCreator.length() || m_fInfoType.length())
@@ -748,12 +935,22 @@ bool File::printResult(std::ostream &o, int verbose) const
 
 void usage(char const *fName)
 {
-  std::cerr << "Syntax error, expect:\n";
-  std::cerr << "\t " << fName << " [-h][-H][-vNum] filename\n";
-  std::cerr << "\t where\t filename is the file path,\n";
-  std::cerr << "\t\t -h: does not print the filename,\n";
-  std::cerr << "\t\t -H: prints the filename[default],\n";
-  std::cerr << "\t\t -vNum: define the verbose level.\n";
+  std::cerr << "Usage: " << fName << " [OPTION] FILENAME\n";
+  std::cerr << "\n";
+  std::cerr << "try to find the file type of FILENAME\n";
+  std::cerr << "\n";
+  std::cerr << "Options:\n";
+  std::cerr << "\t -f: Does not print the filename,\n";
+  std::cerr << "\t -F: Prints the filename[default],\n";
+  std::cerr << "\t -h: Shows this help message,\n";
+  std::cerr << "\t -v: Output mwawFile version\n";
+  std::cerr << "\t -wNum: define the verbose level.\n";
+}
+
+int printVersion()
+{
+  std::cerr << "mwawFile " << VERSION << "\n";
+  return 0;
 }
 
 int main(int argc, char *const argv[])
@@ -761,17 +958,21 @@ int main(int argc, char *const argv[])
   int ch, verbose=0;
   bool printFileName=true;
 
-  while ((ch = getopt(argc, argv, "hHv:")) != -1) {
+  while ((ch = getopt(argc, argv, "fFhvw:")) != -1) {
     switch (ch) {
-    case 'v':
+    case 'w':
       verbose=atoi(optarg);
       break;
-    case 'h':
+    case 'f':
       printFileName = false;
       break;
-    case 'H':
+    case 'F':
       printFileName = true;
       break;
+    case 'v':
+      printVersion();
+      return 0;
+    case 'h':
     case '?':
     default:
       verbose=-1;
@@ -786,7 +987,8 @@ int main(int argc, char *const argv[])
   try {
     file=new libmwaw_tools::File(argv[optind]);
     file->readFileInformation();
-  } catch(...) {
+  }
+  catch (...) {
     std::cerr << argv[0] << ": can not open file " << argv[optind] << "\n";
     if (file) delete file;
     return -1;
@@ -795,11 +997,13 @@ int main(int argc, char *const argv[])
     return -1;
   try {
     file->readDataInformation();
-  } catch(...) {
+  }
+  catch (...) {
   }
   try {
     file->readRSRCInformation();
-  } catch(...) {
+  }
+  catch (...) {
   }
 
   file->m_printFileName = printFileName;
